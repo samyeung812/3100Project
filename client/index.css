@@ -1,0 +1,87 @@
+html, body {
+    padding: 0px;
+    margin: 0px;
+    height: 100%;
+    width: 100%;
+}
+
+.page {
+    background-color: #FFF;
+    display: none;
+    padding: 0px;
+    margin: 0px;
+    height: 100%;
+    width: 100%;   
+}
+
+.wrapper {
+    display: none;
+    width: 100%;
+    height: 100%;
+    padding: 0px;
+    margin: 0px;
+}
+
+.popup {
+    background-color: rgba(0,0,0,0.2);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+}
+
+.box {
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #333;
+    color: #FFF;
+    padding: 25px 0px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.popup .box {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.box button {
+    width: 150px;
+    height: 35px;
+    margin: 5px;
+}
+
+.box input[type=text] {
+    width: 350px;
+    height: 25px;
+    margin: 5px;
+}
+
+.box input[type=password] {
+    width: 350px;
+    height: 25px;
+    margin: 5px;
+}
+
+.box input[type=submit] {
+    width: 150px;
+    height: 35px;
+    margin: 5px;
+}
+
+#game-board {
+    display: none;
+}
+
+#login-page {
+    display: block;
+}
+
+#login-wrapper {
+    display: block;
+}

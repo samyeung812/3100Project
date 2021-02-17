@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+<div id="login-page" class="page">
+    <div id="login-wrapper" class="wrapper popup">
+        <form id="login-box" class="box">
+            Username
+            <input type="text" name="username" placeholder="username">
+            Password
+            <input type="password" name="password" placeholder="password">
+            <div><input type="checkbox" id="remember" name="remember" value=true checked><label for="remember">Remember Me</label></div>
+            <input class="submit" type="submit" value="Login">
+            <button id="create-button" type="button">Create Account</button>
+        </form>
+    </div>
+
+    <div id="registration-wrapper" class="wrapper popup">
+        <form id="registration-box" class="box">
+            Username
+            <input type="text" name="username" placeholder="username">
+            Email
+            <input type="text" name="email" placeholder="email@*.com">
+            Password
+            <input type="password" name="password" placeholder="password">
+            Comfirm Password
+            <input type="password" name="confirmPassword" placeholder="confirm password">
+            <input class="submit" type="submit" value="Register">
+            <button id="close-create-button" type="button">Back</button>
+        </form>
+    </div>
+</div>
+    
+<div id ="home-page" class="page">
+    <div id="menu-wrapper" class="wrapper popup">
+        <div id="menu-box" class="box">
+            <button id="battle-button">Battle Mode</button>
+            <button id="time-button">Time Mode</button>
+            <button id="score-button">Score Board</button>
+            <button id="ranking-button">Ranking</button>
+            <button id="setting-button">Setting</button>
+        </div>
+    </div>
+
+    <div id="setting-wrapper" class="wrapper popup">
+        <div id="setting-box" class="box">
+            <div id="username-box"></div>
+            <button id="logout-button">Logout</button>
+            <button id="change-password-button">Change Password</button>
+            <button id="close-setting-button">Close</button>
+        </div>
+    </div>
+
+    <div id="change-password-wrapper" class="wrapper popup">
+        <form id="change-password-box" class="box">
+            Original Password
+            <input type="password" name="originalPassword" placeholder="original password">
+            New Password
+            <input type="password" name="newPassword" placeholder="new password">
+            Comfirm Password
+            <input type="password" name="confirmPassword" placeholder="confirm password">
+            <input class="submit" type="submit" value="Change Password">
+            <button id="close-change-password-button" type="button">Close</button>
+        </form>
+    </div>
+
+    <canvas id = "game-board"></canvas>
+</div>
+
+<script src="client.js"></script>
+</body>
+</html>

@@ -40,7 +40,8 @@ var con = mysql.createConnection({
     password: "admin",
     database: "nodeServerDB",
     port: "3306",
-    insecureAuth : true
+    insecureAuth : true,
+    multipleStatements: true
 }); 
 
 // Mysql Server Connection
@@ -54,8 +55,17 @@ const bcrypt = require("bcrypt");
 
 // Library for JSON Web Token (use for generating JSON web token and authentication)
 const jwt = require("jsonwebtoken");
+const { query } = require("express");
 // Secret Key for JTW Encryption and Decryption
 const JWT_SECRET_KEY = "2797822dc6bbfd45e3c23caa9307672770651c1618a1cdb29be33d7bb1eeef1840a274ee32a0d86aa9a550c9119fdaba";
+
+// 5-30 characters that not start or end with space
+const usernameFormat = /(?=.{5,30}$)^\S.*[^\s]$/;
+// 8-30 characters with minimal 1 upper-case, 1 lower-case, 1 number, 1 special character
+const passwordFormat = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,30}$/;
+// 6-254 chacaters that satisfies Mail-RFC822-Address format
+const emailFormat = /(?=.{6,254}$)(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
+
 
 // Store User Online Information
 var users = new Map();
@@ -63,15 +73,13 @@ var socketIds = new Map();
 var rooms = new Map();
 
 // Authenticate JSON Web Token
-function authenticate (token, socketId, callback) {
+function authenticateJWT (token, callback) {
     // check whether token input exist
     if (token == null) return callback(false);
 
     // verify token by secret key
     jwt.verify(token, JWT_SECRET_KEY, (err, res) => {
         if (err) return callback(false);
-
-        if (users.has(socketId) && users.get(socketId) != res.username) return callback(false);
         return callback(res);
     });
 }
@@ -112,6 +120,19 @@ function disconnectUser(username) {
     }
 }
 
+function SQLQuery(queryString, args, callback)
+{
+    try{
+        // send sql request
+        con.query(queryString, args, (err, result) => {
+            if (err) return callback(null, err.message);
+            else return callback(result, null);
+        });
+    } catch (e) {
+        return callback(null, e.message);
+    }
+}
+
 // Server socket setting
 io.on("connection", (socket) => {
 
@@ -132,65 +153,132 @@ io.on("connection", (socket) => {
 
     // Open new room for the user
     socket.on("open-room", (data) => {
-        var msg = JSON.parse(data);
-        if(!msg.token) return;
+        if(!users.has(socket.id)) return;
 
-        authenticate(msg.token, socket.id, (res) => {
-            if (!res) {
-                socket.emit("auth-error", "Incorrect Access Token");
-                return;
-            }
-
-            rooms.set(res.username, 1);
-            console.log(rooms);
-        });
+        rooms.set(users(socket.id), 1);
+        
+        socket.emit("room-id", 1);
     });
 
-    // Change user pass
-    socket.on("change-password", (data) => {
-        var input = JSON.parse(data);
-        var { token, password, newPassword } = input;
+    // Change user password
+    socket.on("change-password", async (data) => {
+        if(!users.has(socket.id)) return;
 
-        // authenicate user JWT
-        authenticate(token, socket.id, async (res) => {
-            if (!res) {
-                socket.emit("auth-error", "Incorrect Access Token");
+        var input = JSON.parse(data);
+        var username = users.get(socket.id);
+
+        var { password, newPassword, confirmPassword } = input;
+        
+        
+        // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
+        //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
+        //             64 for incorrect password, 128 for non-existing username, 256 for unmatch confirm password
+        var errorCode = 0;
+
+        var passwordMatch = passwordFormat.exec(newPassword);
+        if(!passwordMatch || passwordMatch[0] != newPassword) {
+            errorCode |= 2;
+        }
+        if (newPassword != confirmPassword) errorCode |= 256;
+
+        // sql query string
+        var queryString1 = "SELECT password FROM accounts WHERE username=?";
+        var queryString2 = "UPDATE accounts SET password=? WHERE username=?;";
+
+        // send query to sql database
+        SQLQuery(queryString1, [username], compareAndUpdatePassword);
+        
+        async function compareAndUpdatePassword (result, error) {
+            if(!result) {
+                errorCode |= 8;
+                socket.emit("change-password-result", errorCode);
                 return;
             }
 
-            try {
-                // check whether the password is correct
-                if (await bcrypt.compare(password, res.password)) {
-                    // sql query string
-                    var sql = "UPDATE accounts SET password=? WHERE username=?;";
+            // get query result password
+            var hashedPassword = "";
+            if (result[0]) hashedPassword = result[0].password;
 
+            // compare the encrypted password with user input
+            if (await bcrypt.compare(password, hashedPassword)) {
+                if(errorCode == 0) {
                     // encrypt the new password
                     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
                     // send query to sql database
-                    con.query(sql, [hashedNewPassword, res.username], (err, result) => {
-                        if (err) {
-                            socket.emit("change-password-result", "Change Password Failed");
-                            throw err;
+                    SQLQuery(queryString2, [hashedNewPassword, username], (result, error) => {
+                        if(!result) {
+                            errorCode |= 8;
                         }
-
-                        // send result and new JWT
-                        socket.emit("change-password-result", "success");
-                        var newToken = jwt.sign({ username: res.username, password: hashedNewPassword }, JWT_SECRET_KEY);
-                        socket.emit("access-token-update", newToken);
                     });
-                } else {
-                    socket.emit("change-password-result", "Incorrect Password!");
                 }
-            } catch {
-                socket.emit("change-password-result", "Change Password Error!");
+            } else {
+                errorCode |= 64;
             }
-        });
+
+            socket.emit("change-password-result", errorCode);
+        }
+    });
+
+    
+    // Change user email
+    socket.on("change-email", async (data) => {
+        if(!users.has(socket.id)) return;
+
+        var input = JSON.parse(data);
+        var username = users.get(socket.id);
+
+        var { password, email } = input;
+        
+        
+        // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
+        //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
+        //             64 for incorrect password, 128 for non-existing username, 256 for unmatch confirm password
+        var errorCode = 0;
+
+        var emailMatch = emailFormat.exec(email);
+        if (!emailMatch || emailMatch[0] != email) errorCode |= 4;
+
+        // sql query string
+        var queryString1 = "SELECT password FROM accounts WHERE username=?";
+        var queryString2 = "UPDATE accounts SET email=? WHERE username=?;";
+
+        // send query to sql database
+        SQLQuery(queryString1, [username], compareAndUpdateEmail);
+        
+        async function compareAndUpdateEmail (result, error) {
+            if(!result) {
+                errorCode |= 8;
+                socket.emit("change-email-result", errorCode);
+                return;
+            }
+
+            // get query result password
+            var hashedPassword = "";
+            if (result[0]) hashedPassword = result[0].password;
+
+            // compare the encrypted password with user input
+            if (await bcrypt.compare(password, hashedPassword)) {
+                if(errorCode == 0) {
+                    // send query to sql database
+                    SQLQuery(queryString2, [email, username], (result, error) => {
+                        if(!result) {
+                            errorCode |= 8;
+                        }
+                    });
+                }
+            } else {
+                errorCode |= 64;
+            }
+            socket.emit("change-email-result", errorCode);
+        }
     });
 
     socket.on("token-login", (token) => {
+        if(users.has(socket.id)) return;
+
         // authenticate user JWT
-        authenticate(token, socket.id, (res) => {
+        authenticateJWT(token, (res) => {
             if (!res) {
                 socket.emit("auth-error", "Incorrect Access Token");
                 return;
@@ -217,57 +305,93 @@ io.on("connection", (socket) => {
 
         var input = JSON.parse(data);
         var { username, password } = input;
-        
-        try{
-            // sql query string
-            var sql = "SELECT password FROM accounts WHERE username=?";
 
-            // send sql request
-            con.query(sql, [username], async (err, result) => {
-                if (err) throw err;
+        // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
+        //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
+        //             64 for incorrect password, 128 for non-existing username
+        var errorCode = 0;
 
-                var hashedPassword = "";
-                
-                // get query result password
-                if (result[0]) hashedPassword = result[0].password;
+        // sql query string
+        var queryString = "SELECT password FROM accounts WHERE username=?";
+        SQLQuery(queryString, [username], async (result, error) => {
+            if(!result) {
+                errorCode |= 8;
+                socket.emit("login-result", errorCode);
+                return;
+            }
 
-                // compare the encrypted password with user input
-                if (await bcrypt.compare(password, hashedPassword)) {
-                    // send JWT to user if correct
-                    var token = jwt.sign({ username: username, password: hashedPassword }, JWT_SECRET_KEY);
-                    socket.emit("access-token", token);
-                } else {
-                    socket.emit("login-error", "Incorrect Username or Password!");
-                }
-            });
-        } catch {
-            socket.emit("login-error", "Login Error!");
-        }
+            // get query result password
+            var hashedPassword = "";
+            if (result[0]) hashedPassword = result[0].password;
+            else errorCode |= 128;
+
+            // compare the encrypted password with user input
+            if (await bcrypt.compare(password, hashedPassword)) {
+                // send JWT to user if correct
+                var token = jwt.sign({ username: username }, JWT_SECRET_KEY, { expiresIn: '7d' });
+                socket.emit("access-token", token);
+            } else {
+                errorCode |= 64;
+            }
+            socket.emit("login-result", errorCode);
+        });
     });
 
     socket.on("register", async (data) => {
         if (users.has(socket.id)) return;
 
         var input = JSON.parse(data);
-        var { username, password, email } = input;
+        var { username, password, confirmPassword, email } = input;
         
-        try {
-            // encrypt user password
-            const hashedPassword = await bcrypt.hash(password, 10);
+        // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
+        //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
+        //             64 for incorrect password, 128 for non-existing username, 256 for unmatch confirm password
+        var errorCode = 0;
+        
+        var usernameMatch = usernameFormat.exec(username);
+        var passwordMatch = passwordFormat.exec(password);
+        var emailMatch = emailFormat.exec(email);
 
-            // sql query string
-            var sql = "INSERT INTO accounts (username, email, password) VALUES (?, ?, ?);";
+        if(!usernameMatch || usernameMatch[0] != username) errorCode |= 1;
+        if(!passwordMatch || passwordMatch[0] != password) errorCode |= 2;
+        if(!emailMatch || emailMatch[0] != email) errorCode |= 4;
+        if(password != confirmPassword) errorCode |= 256;
+        
+        // sql query string
+        var queryString1 = "SELECT COUNT(*) AS count FROM accounts WHERE username=?;";
+        var queryString2 = "SELECT COUNT(*) AS count FROM accounts WHERE email=?;";
+        var queryString3 = "INSERT INTO accounts (username, email, password) VALUES (?, ?, ?);";
+        
+        SQLQuery(queryString1 + queryString2, [username, email], validateAndCreate);
 
-            // send request to sql database
-            con.query(sql, [username, email, hashedPassword], (err, result) => {
-                if (err) {
-                    socket.emit("register-result", "Registration Failed");
-                    throw err;
-                }
-                socket.emit("register-result", "success");
-            });
-        } catch {
-            socket.emit("register-result", "Registration Error!");
+        async function validateAndCreate(result, error) {
+            if(!result) {
+                errorCode |= 8;
+                socket.emit("register-result", errorCode);
+                return;
+            }
+
+            if(result[0][0].count > 0) {
+                errorCode |= 16;
+            }
+            
+            if(result[1][0].count > 0) {
+                errorCode |= 32;
+            }
+
+            if(errorCode == 0) {
+                // encrypt user password
+                const hashedPassword = await bcrypt.hash(password, 10);
+
+                SQLQuery(queryString3, [username, email, hashedPassword], (result, error) => {
+                    if(!result) {
+                        errorCode |= 8;
+                    }
+                    socket.emit("register-result", errorCode);
+                });
+            } else {
+                socket.emit("register-result", errorCode);
+            }
         }
     });
 });

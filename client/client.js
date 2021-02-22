@@ -11,7 +11,6 @@ const registrationWrapper = document.getElementById("registration-wrapper");
 const registrationBox = document.getElementById("registration-box");
 const closeCreateBtn = document.getElementById("close-create-button");
 
-
 /** Components in Home Page **/
 const homePage = document.getElementById("home-page");
 
@@ -25,12 +24,18 @@ const settingWrapper = document.getElementById("setting-wrapper");
 const usernameBox = document.getElementById("username-box");
 const logoutBtn = document.getElementById("logout-button");
 const changePasswordBtn = document.getElementById("change-password-button");
+const changeEmailBtn = document.getElementById("change-email-button");
 const closeSettingBox = document.getElementById("close-setting-button");
 
 // Change Password Form
 const changePasswordWrapper = document.getElementById("change-password-wrapper");
 const changePasswordBox = document.getElementById("change-password-box");
 const closeChangePasswordBtn = document.getElementById("close-change-password-button");
+
+//Change Email Form
+const changeEmailWrapper = document.getElementById("change-email-wrapper");
+const changeEmailBox = document.getElementById("change-email-box");
+const closeChangeEmailBtn = document.getElementById("close-change-email-button");
 
 // Game Board
 const gameBoard = document.getElementById("game-board");
@@ -43,12 +48,14 @@ var sessionToken;
 // Show Registration Form
 createBtn.addEventListener("click", showRegistration);
 function showRegistration () {
+    updateLoginError(0);
     registrationWrapper.style.display = "block";
 }
 
 // Close Registration Form
 closeCreateBtn.addEventListener("click", closeRegistration);
 function closeRegistration () {
+    updateRegistrationError(0);
     registrationWrapper.style.display = "none";
     registrationBox.reset();
 }
@@ -85,11 +92,26 @@ function showChangePassword() {
     changePasswordWrapper.style.display = "block";
 }
 
-// Close Chnage Password Form and Clear The Input
+// Close Change Password Form and Clear The Input
 closeChangePasswordBtn.addEventListener("click", closeChangePassword);
 function closeChangePassword() {
     changePasswordWrapper.style.display = "none";
     changePasswordBox.reset();
+    updateChangePasswordError(0);
+}
+
+// Show Change Email Form
+changeEmailBtn.addEventListener("click", showChangeEmail);
+function showChangeEmail() {
+    changeEmailWrapper.style.display = "block";
+}
+
+// Close Change Email Form and Clear The Input
+closeChangeEmailBtn.addEventListener("click", closeChangeEmail);
+function closeChangeEmail() {
+    changeEmailWrapper.style.display = "none";
+    changeEmailBox.reset();
+    updateChangeEmailError(0);
 }
 
 // Show Main Menu and Hide Game Board
@@ -111,6 +133,100 @@ function getCookie (name) {
     if (parts.length === 2) return parts.pop().split(';').shift();
 }
 
+function updateLoginError(errorCode) {
+    // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
+    //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
+    //             64 for incorrect password, 128 for non-existing username, 256 for unmatch confirm password
+    if(errorCode & 128) {
+        document.getElementById("login-username-error").innerText = "Username does not exist!";
+    } else {
+        document.getElementById("login-username-error").innerText = "";
+    }
+    
+    if(errorCode & 64) {
+        document.getElementById("login-password-error").innerText = "Incorrect password!";
+    } else {
+        document.getElementById("login-password-error").innerText = "";
+    }
+}
+
+function updateRegistrationError(errorCode) {
+    // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
+    //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
+    //             64 for incorrect password, 128 for non-existing username, 256 for unmatch confirm password
+    if (errorCode & 1 || errorCode & 16) {
+        if(errorCode & 1) {
+            document.getElementById("register-username-error").innerText = "Invalid username format!";
+        } else {
+            document.getElementById("register-username-error").innerText = "The username has already registered!";
+        }
+    } else {
+        document.getElementById("register-username-error").innerText = "";
+    }
+    
+    if (errorCode & 2) {
+        document.getElementById("register-password-error").innerText = "Invalid password format!";
+    } else {
+        document.getElementById("register-password-error").innerText = "";
+    }
+
+    if (errorCode & 4 || errorCode & 32) {
+        if(errorCode & 4) {
+            document.getElementById("register-email-error").innerText = "Invalid email format!";
+        } else {
+            document.getElementById("register-email-error").innerText = "The email has already registered!";
+        }
+    } else {
+        document.getElementById("register-email-error").innerText = "";
+    }
+
+    if (errorCode & 256) {
+        document.getElementById("register-comfirm-password-error").innerText = "The password does not match!";
+    } else {
+        document.getElementById("register-comfirm-password-error").innerText = "";
+    }
+}
+
+function updateChangePasswordError(errorCode) {
+    // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
+    //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
+    //             64 for incorrect password, 128 for non-existing username, 256 for unmatch confirm password
+    if(errorCode & 2) {
+        document.getElementById("change-new-password-error").innerText = "Invalid password format!";
+    } else {
+        document.getElementById("change-new-password-error").innerText = "";
+    }
+    
+    if(errorCode & 64) {
+        document.getElementById("change-password-error").innerText = "Incorrect password!";
+    } else {
+        document.getElementById("change-password-error").innerText = "";
+    }
+
+    if (errorCode & 256) {
+        document.getElementById("change-confirm-password-error").innerText = "The password does not match!";
+    } else {
+        document.getElementById("change-confirm-password-error").innerText = "";
+    }
+}
+
+function updateChangeEmailError(errorCode) {
+    // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
+    //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
+    //             64 for incorrect password, 128 for non-existing username, 256 for unmatch confirm password
+    if(errorCode & 4) {
+        document.getElementById("change-email-error").innerText = "Invalid email format!";
+    } else {
+        document.getElementById("change-email-error").innerText = "";
+    }
+
+    if(errorCode & 64) {
+        document.getElementById("change-email-password-error").innerText = "Incorrect password!";
+    } else {
+        document.getElementById("change-email-password-error").innerText = "";
+    }
+}
+
 // Self Executing Function
 (() => {
     const socket = io();
@@ -125,17 +241,14 @@ function getCookie (name) {
         if (sessionToken) {
             socket.emit("token-login", sessionToken);
         }
+        else
+        {
+            loginPage.style.display = "block";
+        }
     });
 
     socket.on("disconnect", () => {
         console.log("disconnected from server");
-    });
-
-    socket.on("register-result", (result) => {
-        if (result == "success") {
-            closeRegistration();
-        }
-        console.log("register result: " + result);
     });
 
     socket.on("error", (msg) => {
@@ -143,19 +256,34 @@ function getCookie (name) {
     });
 
     socket.on("auth-error", (msg) => {
-        console.log(msg);
+        logout();
     });
 
-    socket.on("login-error", (result) => {
-        console.log("login error: " + result);
+    socket.on("login-result", (errorCode) => {
+        updateLoginError(errorCode);
     });
 
-    socket.on("change-password-result", (result) => {
-        console.log(result);
-        if (result == "success") {
+    socket.on("change-password-result", (errorCode) => {
+        if (errorCode == 0) {
             closeChangePassword();
         }
-    })
+        updateChangePasswordError(errorCode);
+    });
+
+    socket.on("change-email-result", (errorCode) => {
+        if (errorCode == 0) {
+            closeChangeEmail();
+        }
+        updateChangeEmailError(errorCode);
+    });
+
+    socket.on("register-result", (errorCode) => {
+        if (errorCode == 0) {
+            closeRegistration();
+        }
+        console.log("register-result", errorCode);
+        updateRegistrationError(errorCode);
+    });
 
     socket.on("access-token", (token) => {
         // save JWT to session
@@ -165,27 +293,14 @@ function getCookie (name) {
         var remember = loginBox.querySelector("input[name='remember']").checked;
         if (remember) {
             // save JTW to cookie for 7 days
+            var days = 7;
             var d = new Date();
-            d.setTime(d.getTime() + (7*24*60*60*1000));
+            d.setTime(d.getTime() + (days*24*60*60*1000));
             var expires = "expires="+ d.toUTCString();
             document.cookie = "access-token=" + token + ";" + expires;
         }
 
         socket.emit("token-login", token);
-    });
-
-    socket.on("access-token-update", (token) => {
-        sessionStorage.setItem("access-token", token);
-        sessionToken = token;
-
-        var remember = loginBox.querySelector("input[name='remember']").checked;
-        if (remember) {
-            // save JTW to cookie for 7 days
-            var d = new Date();
-            d.setTime(d.getTime() + (7*24*60*60*1000));
-            var expires = "expires="+ d.toUTCString();
-            document.cookie = "access-token=" + token + ";" + expires;
-        }
     });
 
     socket.on("login", (username) => {
@@ -213,6 +328,11 @@ function getCookie (name) {
         return false;
     };
 
+    changeEmailBox.onsubmit = () => {
+        changeEmail(socket);
+        return false;
+    };
+
     battleBtn.addEventListener("click", () => {
         openBattleRoom(socket);
     });
@@ -233,12 +353,7 @@ const register = (socket) => {
     var password = registrationBox.querySelector("input[name='password']").value;
     var confirmPassword = registrationBox.querySelector("input[name='confirmPassword']").value;
 
-    // validate user input
-    if (password == confirmPassword) {
-        socket.emit("register", JSON.stringify({ username: username, password: password, email: email }));
-    } else {
-        console.log("The passwords do not match, please try again.");
-    }
+    socket.emit("register", JSON.stringify({ username: username, password: password, confirmPassword: confirmPassword, email: email }));
 };
 
 const changePassword = (socket) => {
@@ -247,12 +362,15 @@ const changePassword = (socket) => {
     var newPassword = changePasswordBox.querySelector("input[name='newPassword']").value;
     var confirmPassword = changePasswordBox.querySelector("input[name='confirmPassword']").value;
 
-    // validate user input
-    if (newPassword == confirmPassword) {
-        socket.emit("change-password", JSON.stringify({ token: sessionToken, password: password, newPassword: newPassword }));
-    } else {
-        console.log("The new passwords do not match, please try again.");
-    }
+    socket.emit("change-password", JSON.stringify({ password: password, newPassword: newPassword , confirmPassword: confirmPassword}));
+};
+
+const changeEmail = (socket) => {
+    // get user input
+    var password = changeEmailBox.querySelector("input[name='password']").value;
+    var email = changeEmailBox.querySelector("input[name='email']").value;
+
+    socket.emit("change-email", JSON.stringify({ password: password, email: email }));
 };
 
 const openBattleRoom = (socket) => {

@@ -79,9 +79,17 @@ html, body {
 }
 
 #login-page {
-    display: block;
+    display: none;
 }
 
 #login-wrapper {
     display: block;
+}
+
+.error {
+    color: rgb(212, 68, 68);
+    display: block;
+    height:auto;
+    width:100%;
+    text-align: center;
 }

@@ -10,10 +10,16 @@
 <div id="login-page" class="page">
     <div id="login-wrapper" class="wrapper popup">
         <form id="login-box" class="box">
-            Username
-            <input type="text" name="username" placeholder="username">
-            Password
-            <input type="password" name="password" placeholder="password">
+            <div>
+                Username
+                <input type="text" name="username" placeholder="username">
+                <span id="login-username-error" class="error"></span>
+            </div>
+            <div>
+                Password
+                <input type="password" name="password" placeholder="password">
+                <span id="login-password-error" class="error"></span>
+            </div>
             <div><input type="checkbox" id="remember" name="remember" value=true checked><label for="remember">Remember Me</label></div>
             <input class="submit" type="submit" value="Login">
             <button id="create-button" type="button">Create Account</button>
@@ -22,14 +28,26 @@
 
     <div id="registration-wrapper" class="wrapper popup">
         <form id="registration-box" class="box">
-            Username
-            <input type="text" name="username" placeholder="username">
-            Email
-            <input type="text" name="email" placeholder="email@*.com">
-            Password
-            <input type="password" name="password" placeholder="password">
-            Comfirm Password
-            <input type="password" name="confirmPassword" placeholder="confirm password">
+            <div>
+                Username
+                <input type="text" name="username" placeholder="username">
+                <span id="register-username-error" class="error"></span>
+            </div>
+            <div>
+                Email
+                <input type="text" name="email" placeholder="email@*.com">
+                <span id="register-email-error" class="error"></span>
+            </div>
+            <div>
+                Password
+                <input type="password" name="password" placeholder="password">
+                <span id="register-password-error" class="error"></span>
+            </div>
+            <div>
+                Comfirm Password
+                <input type="password" name="confirmPassword" placeholder="confirm password">
+                <span id="register-comfirm-password-error" class="error"></span>
+            </div>
             <input class="submit" type="submit" value="Register">
             <button id="close-create-button" type="button">Back</button>
         </form>
@@ -52,20 +70,47 @@
             <div id="username-box"></div>
             <button id="logout-button">Logout</button>
             <button id="change-password-button">Change Password</button>
+            <button id="change-email-button">Change Email</button>
             <button id="close-setting-button">Close</button>
         </div>
     </div>
 
     <div id="change-password-wrapper" class="wrapper popup">
         <form id="change-password-box" class="box">
-            Original Password
-            <input type="password" name="originalPassword" placeholder="original password">
-            New Password
-            <input type="password" name="newPassword" placeholder="new password">
-            Comfirm Password
-            <input type="password" name="confirmPassword" placeholder="confirm password">
+            <div>
+                Original Password
+                <input type="password" name="originalPassword" placeholder="original password">
+                <span id="change-password-error" class="error"></span>
+            </div>
+            <div>
+                New Password
+                <input type="password" name="newPassword" placeholder="new password">
+                <span id="change-new-password-error" class="error"></span>
+            </div>
+            <div>
+                Comfirm Password
+                <input type="password" name="confirmPassword" placeholder="confirm password">
+                <span id="change-confirm-password-error" class="error"></span>
+            </div>
             <input class="submit" type="submit" value="Change Password">
             <button id="close-change-password-button" type="button">Close</button>
+        </form>
+    </div>
+
+    <div id="change-email-wrapper" class="wrapper popup">
+        <form id="change-email-box" class="box">
+            <div>
+                Password
+                <input type="password" name="password" placeholder="password">
+                <span id="change-email-password-error" class="error"></span>
+            </div>
+            <div>
+                New Email
+                <input type="text" name="email" placeholder="email@*.com">
+                <span id="change-email-error" class="error"></span>
+            </div>
+            <input class="submit" type="submit" value="Change Email">
+            <button id="close-change-email-button" type="button">Close</button>
         </form>
     </div>
 

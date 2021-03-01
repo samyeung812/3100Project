@@ -32,10 +32,16 @@ const changePasswordWrapper = document.getElementById("change-password-wrapper")
 const changePasswordBox = document.getElementById("change-password-box");
 const closeChangePasswordBtn = document.getElementById("close-change-password-button");
 
-//Change Email Form
+// Change Email Form
 const changeEmailWrapper = document.getElementById("change-email-wrapper");
 const changeEmailBox = document.getElementById("change-email-box");
 const closeChangeEmailBtn = document.getElementById("close-change-email-button");
+
+// Room
+const roomWrapper = document.getElementById("room-wrapper");
+const roomBox = document.getElementById("room-box");
+const roomId = document.getElementById("room-id");
+const leaveBtn = document.getElementById("leave-button");
 
 // Game Board
 const gameBoard = document.getElementById("game-board");
@@ -314,7 +320,8 @@ function updateChangeEmailError(errorCode) {
     });
 
     socket.on("room-id", (id) => {
-        console.log(id);
+        roomWrapper.style.display = "block";
+        roomId.innerText = id;
     });
 
     loginBox.onsubmit = () => { 
@@ -379,4 +386,10 @@ const changeEmail = (socket) => {
 
 const openBattleRoom = (socket) => {
     socket.emit("open-room");
+}
+
+const leaveRoom = (socket) => {
+    roomId.innerText = "";
+    roomWrapper.style.display = "none";
+    socket.emit("leave-room");
 }

@@ -55,7 +55,7 @@ const bcrypt = require("bcrypt");
 
 // Library for JSON Web Token (use for generating JSON web token and authentication)
 const jwt = require("jsonwebtoken");
-const { query } = require("express");
+
 // Secret Key for JTW Encryption and Decryption
 const JWT_SECRET_KEY = "2797822dc6bbfd45e3c23caa9307672770651c1618a1cdb29be33d7bb1eeef1840a274ee32a0d86aa9a550c9119fdaba";
 
@@ -122,7 +122,7 @@ function disconnectUser(username) {
 
 function SQLQuery(queryString, args, callback)
 {
-    try{
+    try {
         // send sql request
         con.query(queryString, args, (err, result) => {
             if (err) return callback(null, err.message);
@@ -133,6 +133,17 @@ function SQLQuery(queryString, args, callback)
     }
 }
 
+// Generate random code with specific length
+const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+function generateCode(len) {
+    var res = "";
+    for(var i = 0; i < len; i++) {
+        res += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return res;
+}
+
+
 // Server socket setting
 io.on("connection", (socket) => {
 
@@ -141,8 +152,8 @@ io.on("connection", (socket) => {
         // check if user is not logged in
         if (!users.has(socket.id)) return;
 
-        // wait user to reconnect for 2 minutes
-        var minutes = 2;
+        // wait user to reconnect for 1 minutes
+        var minutes = 1;
         if (rooms.get(users.get(socket.id))) setTimeout(disconnectUser, minutes * 60 * 1000, users.get(socket.id));
 
         // remove user online information
@@ -152,12 +163,17 @@ io.on("connection", (socket) => {
     });
 
     // Open new room for the user
-    socket.on("open-room", (data) => {
+    socket.on("open-room", () => {
         if(!users.has(socket.id)) return;
+        if(rooms.has(users.get(socket.id))) return;
 
-        rooms.set(users(socket.id), 1);
+        var room = generateCode(6);
+        while(rooms.has(room)) {
+            room = generateCode(6);
+        }
+        rooms.set(users.get(socket.id), room);
         
-        socket.emit("room-id", 1);
+        socket.emit("room-id", room);
     });
 
     // Change user password

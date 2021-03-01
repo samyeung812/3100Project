@@ -313,6 +313,10 @@ function updateChangeEmailError(errorCode) {
         homePage.style.display = "block";
     });
 
+    socket.on("room-id", (id) => {
+        console.log(id);
+    });
+
     loginBox.onsubmit = () => { 
         login(socket);
         return false;
@@ -374,5 +378,5 @@ const changeEmail = (socket) => {
 };
 
 const openBattleRoom = (socket) => {
-    socket.emit("open-room", JSON.stringify({ token: sessionToken }));
+    socket.emit("open-room");
 }

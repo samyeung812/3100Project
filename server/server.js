@@ -1,18 +1,24 @@
 // command for installing nodejs library:
-// npm install express socket.io bcrypt mysql jsonwebtoken
+// npm install express socket.io bcrypt mysql jsonwebtoken nodemon
+
+// commad for starting the server
+// nodemon start
+// node server.js
 
 const express = require("express");
 const app = express();
 
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
+// const login = require("./login.js")(io);
+// const game = require("./game.js")(io);
 
 // Set The Client File as Static Directory
-app.use(express.static(__dirname + "/client/"));
+app.use(express.static(__dirname + "/../client/"));
 
 // Response for http://localhost/
 app.get("/", (req, res) => {
-    res.sendFile(__dirname+"/client/login.html");
+    res.sendFile(__dirname+"/../client/login.html");
 });
 
 // Response for Other Get Access
@@ -68,9 +74,9 @@ const emailFormat = /(?=.{6,254}$)(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$
 
 
 // Store User Online Information
-var users = new Map();
-var socketIds = new Map();
-var rooms = new Map();
+var users = new Map();  // get username by socket id
+var socketIds = new Map();  //  get socket id by username
+var rooms = new Map();  // get room id by username
 
 // Authenticate JSON Web Token
 function authenticateJWT (token, callback) {
@@ -167,13 +173,18 @@ io.on("connection", (socket) => {
         if(!users.has(socket.id)) return;
         if(rooms.has(users.get(socket.id))) return;
 
-        var room = generateCode(6);
-        while(rooms.has(room)) {
-            room = generateCode(6);
+        var roomId = generateCode(6);
+        while(rooms.has(roomId)) {
+            roomId = generateCode(6);
         }
-        rooms.set(users.get(socket.id), room);
+        rooms.set(users.get(socket.id), roomId);
+        socket.join(roomId)
         
-        socket.emit("room-id", room);
+        socket.emit("room-id", roomId);
+    });
+
+    socket.on("leave-room", () => {
+        var roomId = rooms.get(users.get(socket.id));
     });
 
     // Change user password

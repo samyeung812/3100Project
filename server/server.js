@@ -72,11 +72,11 @@ const passwordFormat = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,30}$/;
 // 6-254 chacaters that satisfies Mail-RFC822-Address format
 const emailFormat = /(?=.{6,254}$)(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
 
-
 // Store User Online Information
 var users = new Map();  // get username by socket id
 var socketIds = new Map();  //  get socket id by username
 var rooms = new Map();  // get room id by username
+var roomStates = new Map(); // get room state by room id
 
 // Authenticate JSON Web Token
 function authenticateJWT (token, callback) {
@@ -116,7 +116,7 @@ function updateUserConnection(username, socketId)
     users.set(socketId, username);
 }
 
-// Detect whether user disconnected from the game
+// Detect whether user is disconnected from the game
 function disconnectUser(username) {
     // check whether user logged in
     if (!socketIds.has(username) && rooms.has(username)) {
@@ -149,7 +149,6 @@ function generateCode(len) {
     return res;
 }
 
-
 // Server socket setting
 io.on("connection", (socket) => {
 
@@ -179,12 +178,15 @@ io.on("connection", (socket) => {
         }
         rooms.set(users.get(socket.id), roomId);
         socket.join(roomId)
-        
         socket.emit("room-id", roomId);
     });
 
     socket.on("leave-room", () => {
+        var username = users.get(socket.id);
         var roomId = rooms.get(users.get(socket.id));
+        roomStates.delete(roomId);
+        rooms.delete(username);
+        socket.leave(roomId);
     });
 
     // Change user password

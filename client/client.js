@@ -1,4 +1,4 @@
-/** Components in Login Page **/
+// =================  Components in Login Page  ================= //
 const loginPage = document.getElementById("login-page");
 
 // Login Form
@@ -11,7 +11,7 @@ const registrationWrapper = document.getElementById("registration-wrapper");
 const registrationBox = document.getElementById("registration-box");
 const closeCreateBtn = document.getElementById("close-create-button");
 
-/** Components in Home Page **/
+// =================  Components in Home Page  ================= //
 const homePage = document.getElementById("home-page");
 
 // Main Menu
@@ -46,7 +46,7 @@ const leaveBtn = document.getElementById("leave-button");
 // Game Board
 const gameBoard = document.getElementById("game-board");
 
-//=============================================================================
+// ==================================================================== //
 
 // Session Storage of JTW
 var sessionToken;

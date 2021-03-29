@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="/socket.io/socket.io.js"></script>
-    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="/css/index.css">
 </head>
 <body>
 
@@ -23,6 +23,7 @@
             <div><input type="checkbox" id="remember" name="remember" value=true checked><label for="remember">Remember Me</label></div>
             <input class="submit" type="submit" value="Login">
             <button id="create-button" type="button">Create Account</button>
+            <button id="forget-button" type="button">Forget Password</button>
         </form>
     </div>
 
@@ -50,6 +51,18 @@
             </div>
             <input class="submit" type="submit" value="Register">
             <button id="close-create-button" type="button">Back</button>
+        </form>
+    </div>
+
+    <div id="forget-wrapper" class="wrapper popup">
+        <form id="forget-box" class="box">
+            <div>
+                Username
+                <input type="text" name="username" placeholder="username">
+                <span id="forget-username-error" class="error"></span>
+            </div>
+            <input class="submit" type="submit" value="Send Email to Me">
+            <button id="close-forget-button" type="button">Back</button>
         </form>
     </div>
 </div>
@@ -123,6 +136,6 @@
     <canvas id = "game-board"></canvas>
 </div>
 
-<script src="client.js"></script>
+<script src="/js/client.js"></script>
 </body>
 </html>

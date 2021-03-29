@@ -5,11 +5,17 @@ const loginPage = document.getElementById("login-page");
 const loginWrapper = document.getElementById("login-wrapper");
 const loginBox = document.getElementById("login-box");
 const createBtn = document.getElementById("create-button");
+const forgetBtn = document.getElementById("forget-button");
 
 // Registration Form
 const registrationWrapper = document.getElementById("registration-wrapper");
 const registrationBox = document.getElementById("registration-box");
 const closeCreateBtn = document.getElementById("close-create-button");
+
+// Forget Form
+const forgetWrapper = document.getElementById("forget-wrapper");
+const forgetBox = document.getElementById("forget-box");
+const closeForgetBtn = document.getElementById("close-forget-button");
 
 // =================  Components in Home Page  ================= //
 const homePage = document.getElementById("home-page");
@@ -64,6 +70,19 @@ function closeRegistration () {
     updateRegistrationError(0);
     registrationWrapper.style.display = "none";
     registrationBox.reset();
+}
+
+forgetBtn.addEventListener("click", showForget);
+function showForget () {
+    updateForgetError(0);
+    forgetWrapper.style.display = "block";
+}
+
+closeForgetBtn.addEventListener("click", closeForget);
+function closeForget () {
+    updateForgetError(0);
+    forgetWrapper.style.display = "none";
+    forgetBox.reset();
 }
 
 // Logout and Clear Cookie and Session
@@ -193,6 +212,14 @@ function updateRegistrationError(errorCode) {
     }
 }
 
+function updateForgetError(errorCode) {
+    if(errorCode > 0) {
+        document.getElementById("forget-username-error").innerText = "Invalid username";
+    } else {
+        document.getElementById("forget-username-error").innerText = "";
+    }
+}
+
 function updateChangePasswordError(errorCode) {
     // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
     //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
@@ -287,8 +314,15 @@ function updateChangeEmailError(errorCode) {
         if (errorCode == 0) {
             closeRegistration();
         }
-        console.log("register-result", errorCode);
         updateRegistrationError(errorCode);
+    });
+
+    socket.on("forget-password-result", (errorCode) => {
+        if(errorCode == 0)
+        {
+            closeForget();
+        }
+        updateForgetError(errorCode);
     });
 
     socket.on("access-token", (token) => {
@@ -334,6 +368,11 @@ function updateChangeEmailError(errorCode) {
         return false;
     };
 
+    forgetBox.onsubmit = () => {
+        forget(socket);
+        return false;
+    };
+
     changePasswordBox.onsubmit = () => {
         changePassword(socket);
         return false;
@@ -365,6 +404,13 @@ const register = (socket) => {
     var confirmPassword = registrationBox.querySelector("input[name='confirmPassword']").value;
 
     socket.emit("register", JSON.stringify({ username: username, password: password, confirmPassword: confirmPassword, email: email }));
+};
+
+const forget = (socket) => {
+    // get user input
+    var username = forgetBox.querySelector("input[name='username']").value;
+
+    socket.emit("forget-password", JSON.stringify({username: username}));
 };
 
 const changePassword = (socket) => {

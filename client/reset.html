@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/css/index.css">
+</head>
+<body>
+    <div id="reset-password-wrapper" class="wrapper popup">
+        <form id="reset-password-box" class="box">
+            <div>
+                New Password
+                <input type="password" name="newPassword" placeholder="new password">
+                <span id="reset-password-error" class="error"></span>
+            </div>
+            <div>
+                Comfirm Password
+                <input type="password" name="confirmPassword" placeholder="confirm password">
+                <span id="reset-confirm-password-error" class="error"></span>
+            </div>
+            <input class="submit" type="submit" value="Reset Password">
+        </form>
+    </div>
+<script src="/js/reset.js"></script>
+</body>
+</html>

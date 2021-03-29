@@ -7,18 +7,35 @@
 
 const express = require("express");
 const app = express();
+const path = require("path");
 
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
+const mail = require("./mail.js");
+
 // const login = require("./login.js")(io);
 // const game = require("./game.js")(io);
 
 // Set The Client File as Static Directory
-app.use(express.static(__dirname + "/../client/"));
+app.use(express.static(path.join(__dirname, '../client')));
 
 // Response for http://localhost/
 app.get("/", (req, res) => {
-    res.sendFile(__dirname+"/../client/login.html");
+    res.sendFile(path.resolve("login.html"));
+});
+
+// Response for forget password
+app.get("/reset/", (req, res) => {
+    authenticateJWT(req.query.token, (result) => {
+        if(!result || !result.forget)
+        {
+            res.writeHead(404, {'Content-Type': 'text/html'});
+            res.write("404 - Page Not Found.");
+            res.end();
+            return;
+        }
+        res.sendFile(path.resolve("client/reset.html"));
+    });
 });
 
 // Response for Other Get Access
@@ -189,15 +206,68 @@ io.on("connection", (socket) => {
         socket.leave(roomId);
     });
 
+    // Forget password page
+    socket.on("reset-password", (data) => {
+        var input = JSON.parse(data);
+        authenticateJWT(input.token , async (res) => {
+            if(!res || !res.forget) return;
+
+            var username = res.username;
+            var { newPassword, confirmPassword } = input;
+
+            // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
+            //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
+            //             64 for incorrect password, 128 for non-existing username, 256 for unmatch confirm password
+            var errorCode = 0;
+
+            var passwordMatch = passwordFormat.exec(newPassword);
+            if(!passwordMatch || passwordMatch[0] != newPassword) {
+                errorCode |= 2;
+            }
+            if (newPassword != confirmPassword) errorCode |= 256;
+
+            // sql query string
+            var queryString = "UPDATE accounts SET password=? WHERE username=?;";
+
+            if(errorCode == 0) {
+                // encrypt the new password
+                const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+                // send query to sql database
+                SQLQuery(queryString, [hashedNewPassword, username], (result, error) => {
+                    if(!result) {
+                        errorCode |= 8;
+                    }
+                });
+            }
+
+            socket.emit("reset-password-result", errorCode);
+        });
+    });
+
+    socket.on("forget-password", (data) => {
+        var input = JSON.parse(data);
+        var username = input.username;
+        console.log(username);
+        var queryString = "SELECT email FROM accounts WHERE username=?;";
+        SQLQuery(queryString, [username], (result, error) => {
+            if (!result || !result[0]) {
+                socket.emit("forget-password-result", 1);
+                return;
+            }
+            var token = jwt.sign({ forget: true, username: username }, JWT_SECRET_KEY, { expiresIn: '10min' });
+            mail.sendEmail(result[0].email, token);
+            socket.emit("forget-password-result", 0);
+        });
+    });
+
     // Change user password
     socket.on("change-password", async (data) => {
         if(!users.has(socket.id)) return;
 
         var input = JSON.parse(data);
         var username = users.get(socket.id);
-
         var { password, newPassword, confirmPassword } = input;
-        
         
         // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
         //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email

@@ -23,6 +23,8 @@ const homePage = document.getElementById("home-page");
 // Main Menu
 const menuWrapper = document.getElementById("menu-wrapper");
 const battleBtn = document.getElementById("battle-button");
+const openRoomBtn = document.getElementById("open-button");
+const joinBtn = document.getElementById("join-button");
 const settingBtn = document.getElementById("setting-button");
 
 // Setting Menu
@@ -46,8 +48,15 @@ const closeChangeEmailBtn = document.getElementById("close-change-email-button")
 // Room
 const roomWrapper = document.getElementById("room-wrapper");
 const roomBox = document.getElementById("room-box");
-const roomId = document.getElementById("room-id");
+const roomInfo = document.getElementById("room-information");
+const startBtn = document.getElementById("start-button");
 const leaveBtn = document.getElementById("leave-button");
+
+// Join Room Form
+const joinWrapper = document.getElementById("join-wrapper");
+const joinBox = document.getElementById("join-box");
+const joinRoomBtn = document.getElementById("join-room-button");
+const closejoinBtn = document.getElementById("close-join-button");
 
 // Game Board
 const gameBoard = document.getElementById("game-board");
@@ -56,6 +65,7 @@ const gameBoard = document.getElementById("game-board");
 
 // Session Storage of JTW
 var sessionToken;
+var username;
 
 // Show Registration Form
 createBtn.addEventListener("click", showRegistration);
@@ -137,6 +147,17 @@ function closeChangeEmail() {
     changeEmailWrapper.style.display = "none";
     changeEmailBox.reset();
     updateChangeEmailError(0);
+}
+
+joinBtn.addEventListener("click", showJoinRoomWrapper);
+function showJoinRoomWrapper() {
+    joinWrapper.style.display = "block";
+}
+
+closejoinBtn.addEventListener("click", closeJoinRoomWrapper);
+function closeJoinRoomWrapper() {
+    joinWrapper.style.display = "none";
+    joinBox.reset();
 }
 
 // Show Main Menu and Hide Game Board
@@ -260,133 +281,182 @@ function updateChangeEmailError(errorCode) {
     }
 }
 
+function updateJoinError(errorCode) {
+    document.getElementById("join-error").innerText = "";
+    console.log(errorCode);
+    if (errorCode & 1) {
+        document.getElementById("join-error").innerText += "Invalid Room ID";
+    } else if (errorCode & 2) {
+        document.getElementById("join-error").innerText += "The Room Is Fulled";
+    }
+}
+
+function updateRoomState(state) {
+    if(!state) {
+        roomWrapper.style.display = "none";
+        roomInfo.innerHTML = "";
+        return;
+    }
+    
+    roomWrapper.style.display = "block";
+    var html = `<div id="room-id"><center>${state.roomId}</center></div>`;
+    html += `<div>Host: <span id="room-host">${state.host}</span></div>`;
+    html += `<div>Participant: <span id="room-participant">${state.participant ? state.participant : "---"}</div>`;
+    // html += `<div id="room-spectator"></div>`
+    roomInfo.innerHTML = html;
+    
+    if(state.host == username) {
+        startBtn.style.display = "block";
+    } else {
+        startBtn.style.display = "none";
+    }
+}
+
 // Self Executing Function
-(() => {
-    const socket = io();
+// (() => {
+const socket = io();
 
-    socket.on("connect", () => {
-        var cookieToken = getCookie("access-token");
-        if (cookieToken) {
-            sessionStorage.setItem("access-token", cookieToken);
-        }
+socket.on("connect", () => {
+    var cookieToken = getCookie("access-token");
+    if (cookieToken) {
+        sessionStorage.setItem("access-token", cookieToken);
+    }
 
-        sessionToken = sessionStorage.getItem("access-token");
-        if (sessionToken) {
-            socket.emit("token-login", sessionToken);
-        }
-        else
-        {
-            loginPage.style.display = "block";
-        }
-    });
+    sessionToken = sessionStorage.getItem("access-token");
+    if (sessionToken) {
+        socket.emit("token-login", sessionToken);
+    }
+    else
+    {
+        loginPage.style.display = "block";
+    }
+});
 
-    socket.on("disconnect", () => {
-        console.log("disconnected from server");
-    });
+socket.on("disconnect", () => {
+    console.log("disconnected from server");
+});
 
-    socket.on("error", (msg) => {
-        console.log("error", msg);
-    });
+socket.on("error", (msg) => {
+    console.log("error", msg);
+});
 
-    socket.on("auth-error", (msg) => {
-        logout();
-    });
+socket.on("auth-error", (msg) => {
+    logout();
+});
 
-    socket.on("login-result", (errorCode) => {
-        updateLoginError(errorCode);
-    });
+socket.on("login-result", (errorCode) => {
+    updateLoginError(errorCode);
+});
 
-    socket.on("change-password-result", (errorCode) => {
-        if (errorCode == 0) {
-            closeChangePassword();
-        }
-        updateChangePasswordError(errorCode);
-    });
+socket.on("change-password-result", (errorCode) => {
+    if (errorCode == 0) {
+        closeChangePassword();
+    }
+    updateChangePasswordError(errorCode);
+});
 
-    socket.on("change-email-result", (errorCode) => {
-        if (errorCode == 0) {
-            closeChangeEmail();
-        }
-        updateChangeEmailError(errorCode);
-    });
+socket.on("change-email-result", (errorCode) => {
+    if (errorCode == 0) {
+        closeChangeEmail();
+    }
+    updateChangeEmailError(errorCode);
+});
 
-    socket.on("register-result", (errorCode) => {
-        if (errorCode == 0) {
-            closeRegistration();
-        }
-        updateRegistrationError(errorCode);
-    });
+socket.on("register-result", (errorCode) => {
+    if (errorCode == 0) {
+        closeRegistration();
+    }
+    updateRegistrationError(errorCode);
+});
 
-    socket.on("forget-password-result", (errorCode) => {
-        if(errorCode == 0)
-        {
-            closeForget();
-        }
-        updateForgetError(errorCode);
-    });
+socket.on("forget-password-result", (errorCode) => {
+    if(errorCode == 0)
+    {
+        closeForget();
+    }
+    updateForgetError(errorCode);
+});
 
-    socket.on("access-token", (token) => {
-        // save JWT to session
-        sessionStorage.setItem("access-token", token);
-        sessionToken = token;
+socket.on("access-token", (token) => {
+    // save JWT to session
+    sessionStorage.setItem("access-token", token);
+    sessionToken = token;
 
-        var remember = loginBox.querySelector("input[name='remember']").checked;
-        if (remember) {
-            // save JTW to cookie for 7 days
-            var days = 7;
-            var d = new Date();
-            d.setTime(d.getTime() + (days*24*60*60*1000));
-            var expires = "expires="+ d.toUTCString();
-            document.cookie = "access-token=" + token + ";" + expires;
-        }
+    var remember = loginBox.querySelector("input[name='remember']").checked;
+    if (remember) {
+        // save JTW to cookie for 7 days
+        var days = 7;
+        var d = new Date();
+        d.setTime(d.getTime() + (days*24*60*60*1000));
+        var expires = "expires="+ d.toUTCString();
+        document.cookie = "access-token=" + token + ";" + expires;
+    }
 
-        socket.emit("token-login", token);
-    });
+    socket.emit("token-login", token);
+});
 
-    socket.on("login", (username) => {
-        // update home page
-        showMenu();
-        usernameBox.innerText = username;
+socket.on("login", (user) => {
+    // update home page
+    showMenu();
+    username = user;
+    usernameBox.innerText = username;
 
-        // switch page
-        loginPage.style.display = "none";
-        homePage.style.display = "block";
-    });
+    // switch page
+    loginPage.style.display = "none";
+    homePage.style.display = "block";
+});
 
-    socket.on("room-id", (id) => {
-        roomWrapper.style.display = "block";
-        roomId.innerText = id;
-    });
+socket.on("room-state", (data) => {
+    var state = JSON.parse(data);
+    updateRoomState(state);
+});
 
-    loginBox.onsubmit = () => { 
-        login(socket);
-        return false;
-    };
+socket.on("join-room-result", (errorCode) => {
+    if(errorCode == 0)
+    {
+        closeJoinRoomWrapper();
+    }
+    updateJoinError(errorCode); 
+});
 
-    registrationBox.onsubmit = () => {
-        register(socket);
-        return false;
-    };
+loginBox.onsubmit = () => { 
+    login(socket);
+    return false;
+};
 
-    forgetBox.onsubmit = () => {
-        forget(socket);
-        return false;
-    };
+registrationBox.onsubmit = () => {
+    register(socket);
+    return false;
+};
 
-    changePasswordBox.onsubmit = () => {
-        changePassword(socket);
-        return false;
-    };
+forgetBox.onsubmit = () => {
+    forget(socket);
+    return false;
+};
 
-    changeEmailBox.onsubmit = () => {
-        changeEmail(socket);
-        return false;
-    };
+changePasswordBox.onsubmit = () => {
+    changePassword(socket);
+    return false;
+};
 
-    battleBtn.addEventListener("click", () => {
-        openBattleRoom(socket);
-    });
-})();
+changeEmailBox.onsubmit = () => {
+    changeEmail(socket);
+    return false;
+};
+
+joinBox.onsubmit = () => {
+    joinRoom(socket);
+    return false;
+};
+
+openRoomBtn.addEventListener("click", () => {
+    openRoom(socket);
+});
+
+leaveBtn.addEventListener("click", () => {
+    leaveRoom(socket);
+});
+// })();
 
 const login = (socket) => {
     // get user input
@@ -430,12 +500,17 @@ const changeEmail = (socket) => {
     socket.emit("change-email", JSON.stringify({ password: password, email: email }));
 };
 
-const openBattleRoom = (socket) => {
+const joinRoom = (socket) => {
+    var roomId = joinBox.querySelector("input[name='roomId']").value;
+    socket.emit("join-room", roomId);
+};
+
+const openRoom = (socket) => {
     socket.emit("open-room");
 }
 
 const leaveRoom = (socket) => {
-    roomId.innerText = "";
     roomWrapper.style.display = "none";
     socket.emit("leave-room");
+    updateRoomState(null);
 }

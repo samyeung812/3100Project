@@ -72,6 +72,8 @@
         <div id="menu-box" class="box">
             <button id="battle-button">Battle Mode</button>
             <button id="time-button">Time Mode</button>
+            <button id="join-button">Join Battle</button>
+            <button id="open-button">Open Room</button>
             <button id="score-button">Score Board</button>
             <button id="ranking-button">Ranking</button>
             <button id="setting-button">Setting</button>
@@ -129,10 +131,21 @@
 
     <div id="room-wrapper" class="wrapper popup">
         <div id="room-box" class="box">
-            <div id="room-id"></div>
+            <div id="room-information"></div>
+            <button id="start-button">Start</button>
             <button id="leave-button">Leave</button>
         </div>
-    </div> 
+    </div>
+
+    <div id="join-wrapper" class="wrapper popup">
+        <form id="join-box" class="box">
+            <input type="text" name="roomId" placeholder="Room ID">
+            <span id="join-error" class="error"></span>
+            <input class="submit" type="submit" value="Join">
+            <button id="close-join-button" type="button">Close</button>
+        </div>
+    </div>
+
     <canvas id = "game-board"></canvas>
 </div>
 

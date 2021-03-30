@@ -12,6 +12,7 @@ const path = require("path");
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
 const mail = require("./mail.js");
+const room = require("./room.js");
 
 // const login = require("./login.js")(io);
 // const game = require("./game.js")(io);
@@ -92,8 +93,6 @@ const emailFormat = /(?=.{6,254}$)(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$
 // Store User Online Information
 var users = new Map();  // get username by socket id
 var socketIds = new Map();  //  get socket id by username
-var rooms = new Map();  // get room id by username
-var roomStates = new Map(); // get room state by room id
 
 // Authenticate JSON Web Token
 function authenticateJWT (token, callback) {
@@ -136,9 +135,14 @@ function updateUserConnection(username, socketId)
 // Detect whether user is disconnected from the game
 function disconnectUser(username) {
     // check whether user logged in
-    if (!socketIds.has(username) && rooms.has(username)) {
+    if (!socketIds.has(username) && room.getRoomId(username)) {
         // remove user from the game
-        rooms.delete(username);
+        var roomId = room.getRoomId(username);
+        room.leaveRoom(username);
+        
+        // end the game
+        //roomStates.get(roomId);
+        
         console.log(username + " disconnected from the room");
     }
 }
@@ -156,16 +160,6 @@ function SQLQuery(queryString, args, callback)
     }
 }
 
-// Generate random code with specific length
-const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-function generateCode(len) {
-    var res = "";
-    for(var i = 0; i < len; i++) {
-        res += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return res;
-}
-
 // Server socket setting
 io.on("connection", (socket) => {
 
@@ -176,7 +170,7 @@ io.on("connection", (socket) => {
 
         // wait user to reconnect for 1 minutes
         var minutes = 1;
-        if (rooms.get(users.get(socket.id))) setTimeout(disconnectUser, minutes * 60 * 1000, users.get(socket.id));
+        if (room.getRoomId(users.get(socket.id))) setTimeout(disconnectUser, minutes * 60 * 1000, users.get(socket.id));
 
         // remove user online information
         console.log(users.get(socket.id), "logout");
@@ -184,26 +178,45 @@ io.on("connection", (socket) => {
         users.delete(socket.id);
     });
 
+    // Join room
+    socket.on("join-room", (roomId) => {
+        if(!users.has(socket.id)) return;
+        var username = users.get(socket.id);
+        if(room.getRoomId(username)) return;
+
+        var errorCode = room.joinRoom(username, roomId);
+        socket.emit("join-room-result", errorCode);
+        if(errorCode == 0) {
+            socket.join(roomId);
+            io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
+        }
+    });
+
     // Open new room for the user
     socket.on("open-room", () => {
         if(!users.has(socket.id)) return;
-        if(rooms.has(users.get(socket.id))) return;
+        if(room.getRoomId(users.get(socket.id))) return;
 
-        var roomId = generateCode(6);
-        while(rooms.has(roomId)) {
-            roomId = generateCode(6);
-        }
-        rooms.set(users.get(socket.id), roomId);
-        socket.join(roomId)
-        socket.emit("room-id", roomId);
+        var roomId = room.openRoom(users.get(socket.id));
+        socket.join(roomId);
+        io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
     });
 
+    // Leave room
     socket.on("leave-room", () => {
+        if(!users.has(socket.id)) return;
+        if(!room.getRoomId(users.get(socket.id))) return;
+
         var username = users.get(socket.id);
-        var roomId = rooms.get(users.get(socket.id));
-        roomStates.delete(roomId);
-        rooms.delete(username);
+        var roomId = room.getRoomId(users.get(socket.id));
+        
+        // check whether the room is removed after leaving
         socket.leave(roomId);
+        if(room.leaveRoom(username)) {
+            io.to(roomId).emit("room-removed");
+        } else {
+            io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
+        }
     });
 
     // Forget password page
@@ -248,15 +261,23 @@ io.on("connection", (socket) => {
     socket.on("forget-password", (data) => {
         var input = JSON.parse(data);
         var username = input.username;
-        console.log(username);
+
+        // find the email of the user
         var queryString = "SELECT email FROM accounts WHERE username=?;";
         SQLQuery(queryString, [username], (result, error) => {
             if (!result || !result[0]) {
+                // forget password result equal 1 implies invalid username
                 socket.emit("forget-password-result", 1);
                 return;
             }
-            var token = jwt.sign({ forget: true, username: username }, JWT_SECRET_KEY, { expiresIn: '10min' });
+
+            // the reset password link in the email will be expired in 5 minutes
+            var token = jwt.sign({ forget: true, username: username }, JWT_SECRET_KEY, { expiresIn: '5min' });
+
+            // append the token to the link and send it to the email of the user
             mail.sendEmail(result[0].email, token);
+            
+            // forget password result equal 0 implies no error
             socket.emit("forget-password-result", 0);
         });
     });
@@ -318,7 +339,6 @@ io.on("connection", (socket) => {
             socket.emit("change-password-result", errorCode);
         }
     });
-
     
     // Change user email
     socket.on("change-email", async (data) => {
@@ -392,8 +412,9 @@ io.on("connection", (socket) => {
             updateUserConnection(username, socket.id);
 
             // check whether user disconnected from game and reconenct it
-            if (rooms.has(username)) {
-                socket.emit("game-state", rooms.get(username));
+            var roomId = room.getRoomId(username);
+            if (roomId) {
+                socket.emit("room-state", JSON.stringify(room.getRoomState(roomId)));
                 console.log(username + " reconnected to the game");
             }
         });

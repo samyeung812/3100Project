@@ -114,3 +114,25 @@ div {
 #room-information span {
     color: #bbb;
 }
+
+#room-chat-content {
+    max-width: 80%;
+    flex-grow: 1;
+    flex-basis: 0;
+}
+
+.content {
+    justify-content: space-between;
+    width: 100%;
+}
+
+.username {
+    color: yellow;
+    word-wrap: break-word;
+}
+
+.msg {
+    text-align: left;
+    width:100%;
+    word-wrap: break-word;
+}

@@ -56,12 +56,19 @@ const startBtn = document.getElementById("start-button");
 const spectateBtn = document.getElementById("spectate-button");
 const playBtn = document.getElementById("play-button");
 const leaveBtn = document.getElementById("leave-button");
+const roomChatBtn = document.getElementById("room-chat-button");
 
 // Join Room Form
 const joinWrapper = document.getElementById("join-wrapper");
 const joinBox = document.getElementById("join-box");
 const joinRoomBtn = document.getElementById("join-room-button");
 const closejoinBtn = document.getElementById("close-join-button");
+
+// Room Chat Form
+const roomChatWrapper = document.getElementById("room-chat-wrapper");
+const roomChatBox = document.getElementById("room-chat-box");
+const closeRoomChatBtn = document.getElementById("close-room-chat-button");
+const roomChatContent = document.getElementById("room-chat-content");
 
 // Game Board
 const gameBoard = document.getElementById("game-board");
@@ -165,8 +172,19 @@ function closeJoinRoomWrapper() {
     joinBox.reset();
 }
 
+roomChatBtn.addEventListener("click", showRoomChat);
+function showRoomChat() {
+    roomChatWrapper.style.display = "block";
+}
+
+closeRoomChatBtn.addEventListener("click", closeRoomChat);
+function closeRoomChat() {
+    roomChatWrapper.style.display = "none";
+    roomChatBox.reset();
+}
+
 // Show Main Menu and Hide Game Board
-function showMenu () {
+function showMenu() {
     menuWrapper.style.display = "block";
     gameBoard.display = "none";
 }
@@ -296,29 +314,42 @@ function updateJoinError(errorCode) {
 }
 
 function updateRoomState(state) {
+    playersInfo.innerHTML = "";
+    spectatorsInfo.innerHTML = "";
     if(!state) {
         roomWrapper.style.display = "none";
+        roomChatContent.innerHTML = "";
         return;
     }
     
     roomIdInfo.innerText = state.roomId;
-    var playersHTML = "";
-    playersHTML += `<div>${state.players[0]}<span> (host)</span></div>`;
-    playersHTML += `<div>${state.players[1] || "-----"}</div>`;
-    playersInfo.innerHTML = playersHTML;
+
+    // host
+    var div = document.createElement("div");
+    div.innerText = state.players[0];
+    var span = document.createElement("span");
+    span.innerText = " (host)";
+    div.appendChild(span);
+    playersInfo.appendChild(div);
+
+    // other player
+    div = document.createElement("div");
+    div.innerText = state.players[1] || "-----";
+    playersInfo.appendChild(div);
 
     var spectating = false;
-    var spectatorsHTML = "";
     if(state.spectators.length > 0) {
-        spectatorsHTML += "<div>Spectators:&nbsp;</div>";
-        spectatorsHTML += "<div class='vertical-container'>";
+        spectatorsInfo.innerHTML += "<div>Spectators:&nbsp;</div>";
+        var spectatorsDiv = document.createElement("div");
+        spectatorsDiv.className = "vertical-container";
         state.spectators.forEach(spectator => {
-            spectatorsHTML += `<div>${spectator}</div>`;
+            var div = document.createElement("div");
+            div.innerText = spectator;
+            spectatorsDiv.appendChild(div);
             if(spectator == username) spectating = true;
         });
-        spectatorsHTML += "</div>";
+        spectatorsInfo.appendChild(spectatorsDiv);
     }
-    spectatorsInfo.innerHTML = spectatorsHTML;
     
     if(state.players[0] == username) {
         if(state.players.length == 2) startBtn.style.display = "block";
@@ -336,6 +367,23 @@ function updateRoomState(state) {
         if(!state.players.length < 2) playBtn.style.display = "block";
     }
     roomWrapper.style.display = "block";
+}
+
+function toHTMLMessage(username, msg) {
+    var contentDiv = document.createElement("div");
+    contentDiv.className = "content horizontal-container"
+    
+    var div = document.createElement("div");
+    div.className = "username";
+    div.textContent = username + ":";
+    div.innerHTML += "&nbsp;"
+    contentDiv.appendChild(div);
+
+    div = document.createElement("div");
+    div.className = "msg";
+    div.innerText = msg;
+    contentDiv.appendChild(div);
+    return contentDiv;
 }
 
 // Self Executing Function
@@ -437,6 +485,11 @@ socket.on("room-state", (data) => {
     updateRoomState(state);
 });
 
+socket.on("room-msg", (data) => {
+    var {username, msg} = JSON.parse(data);
+    roomChatContent.appendChild(toHTMLMessage(username, msg));
+});
+
 socket.on("join-room-result", (errorCode) => {
     if(errorCode == 0)
     {
@@ -472,6 +525,11 @@ changeEmailBox.onsubmit = () => {
 
 joinBox.onsubmit = () => {
     joinRoom(socket);
+    return false;
+};
+
+roomChatBox.onsubmit = () => {
+    roomChat(socket);
     return false;
 };
 
@@ -555,4 +613,10 @@ const spectate = (socket) => {
 
 const play = (socket) => {
     socket.emit("play");
+};
+
+const roomChat = (socket) => {
+    var msg = roomChatBox.querySelector("input[name='message']").value;
+    roomChatBox.reset();
+    socket.emit("room-chat", msg);
 };

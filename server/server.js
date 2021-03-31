@@ -221,6 +221,16 @@ io.on("connection", (socket) => {
         }
     });
 
+    socket.on("room-chat", (msg) => {
+        if(!users.has(socket.id)) return;
+        if(!room.getRoomId(users.get(socket.id))) return;
+        
+        var username = users.get(socket.id);
+        var roomId = room.getRoomId(users.get(socket.id));
+        
+        io.to(roomId).emit("room-msg", JSON.stringify({username: username, msg: msg}));
+    });
+
     socket.on("spectate", () => {
         if(!users.has(socket.id)) return;
         if(!room.getRoomId(users.get(socket.id))) return;

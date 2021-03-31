@@ -31,7 +31,7 @@
         <form id="registration-box" class="box">
             <div>
                 Username
-                <input type="text" name="username" placeholder="username">
+                <input type="text" name="username" placeholder="username (3-15 length)">
                 <span id="register-username-error" class="error"></span>
             </div>
             <div>
@@ -41,7 +41,7 @@
             </div>
             <div>
                 Password
-                <input type="password" name="password" placeholder="password">
+                <input type="password" name="password" placeholder="password (8-30 length)">
                 <span id="register-password-error" class="error"></span>
             </div>
             <div>
@@ -49,8 +49,10 @@
                 <input type="password" name="confirmPassword" placeholder="confirm password">
                 <span id="register-comfirm-password-error" class="error"></span>
             </div>
-            <input class="submit" type="submit" value="Register">
-            <button id="close-create-button" type="button">Back</button>
+            <div class="horizontal-container">
+                <input class="submit" type="submit" value="Register">
+                <button id="close-create-button" type="button">Back</button>
+            </div>
         </form>
     </div>
 
@@ -61,8 +63,10 @@
                 <input type="text" name="username" placeholder="username">
                 <span id="forget-username-error" class="error"></span>
             </div>
-            <input class="submit" type="submit" value="Send Email to Me">
-            <button id="close-forget-button" type="button">Back</button>
+            <div class="horizontal-container">
+                <input class="submit" type="submit" value="Send Email to Me">
+                <button id="close-forget-button" type="button">Back</button>
+            </div>
         </form>
     </div>
 </div>
@@ -107,8 +111,10 @@
                 <input type="password" name="confirmPassword" placeholder="confirm password">
                 <span id="change-confirm-password-error" class="error"></span>
             </div>
-            <input class="submit" type="submit" value="Change Password">
-            <button id="close-change-password-button" type="button">Close</button>
+            <div class="horizontal-container">
+                <input class="submit" type="submit" value="Change Password">
+                <button id="close-change-password-button" type="button">Close</button>
+            </div>
         </form>
     </div>
 
@@ -124,16 +130,30 @@
                 <input type="text" name="email" placeholder="email@*.com">
                 <span id="change-email-error" class="error"></span>
             </div>
-            <input class="submit" type="submit" value="Change Email">
-            <button id="close-change-email-button" type="button">Close</button>
+            <div class="horizontal-container">
+                <input class="submit" type="submit" value="Change Email">
+                <button id="close-change-email-button" type="button">Close</button>
+            </div>
         </form>
     </div>
 
     <div id="room-wrapper" class="wrapper popup">
         <div id="room-box" class="box">
-            <div id="room-information"></div>
-            <button id="start-button">Start</button>
-            <button id="leave-button">Leave</button>
+            <div class="horizontal-container">
+                <div>Room ID:&nbsp;</div>
+                <div id="room-id" class="vertical-container"></div>
+            </div>
+            <div class="horizontal-container">
+                <div>Players:&nbsp;</div>
+                <div id="players" class="vertical-container"></div>
+            </div>
+            <div id="spectators" class="horizontal-container"></div>
+            <div class="horizontal-container">
+                <button id="start-button">Start</button>
+                <button id="spectate-button">Spectate</button>
+                <button id="play-button">Play</button>
+                <button id="leave-button">Leave</button>
+            </div>
         </div>
     </div>
 
@@ -141,8 +161,10 @@
         <form id="join-box" class="box">
             <input type="text" name="roomId" placeholder="Room ID">
             <span id="join-error" class="error"></span>
-            <input class="submit" type="submit" value="Join">
-            <button id="close-join-button" type="button">Close</button>
+            <div class="horizontal-container">
+                <input class="submit" type="submit" value="Join">
+                <button id="close-join-button" type="button">Close</button>
+            </div>
         </div>
     </div>
 

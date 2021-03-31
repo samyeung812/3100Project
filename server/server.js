@@ -5,14 +5,21 @@
 // nodemon start
 // node server.js
 
+// SQL
+// CREATE DATABASE nodeServerDB;
+// CREATE TABLE accounts (username varchar(20), email varchar(254), password varchar(30));
+// CREATE TABLE ranking (username varchar(20), rank bigint);
+
 const express = require("express");
 const app = express();
 const path = require("path");
 
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
+
 const mail = require("./mail.js");
 const room = require("./room.js");
+const game = require("./game.js");
 
 // const login = require("./login.js")(io);
 // const game = require("./game.js")(io);
@@ -83,8 +90,8 @@ const jwt = require("jsonwebtoken");
 // Secret Key for JTW Encryption and Decryption
 const JWT_SECRET_KEY = "2797822dc6bbfd45e3c23caa9307672770651c1618a1cdb29be33d7bb1eeef1840a274ee32a0d86aa9a550c9119fdaba";
 
-// 5-30 characters that not start or end with space
-const usernameFormat = /(?=.{5,30}$)^\S.*[^\s]$/;
+// 5-20 characters that not start or end with space
+const usernameFormat = /(?=.{3,20}$)^\S.*[^\s]$/;
 // 8-30 characters with minimal 1 upper-case, 1 lower-case, 1 number, 1 special character
 const passwordFormat = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,30}$/;
 // 6-254 chacaters that satisfies Mail-RFC822-Address format
@@ -139,10 +146,7 @@ function disconnectUser(username) {
         // remove user from the game
         var roomId = room.getRoomId(username);
         room.leaveRoom(username);
-        
-        // end the game
-        //roomStates.get(roomId);
-        
+        io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
         console.log(username + " disconnected from the room");
     }
 }
@@ -197,7 +201,7 @@ io.on("connection", (socket) => {
         if(!users.has(socket.id)) return;
         if(room.getRoomId(users.get(socket.id))) return;
 
-        var roomId = room.openRoom(users.get(socket.id));
+        var roomId = room.openRoom(users.get(socket.id), false);
         socket.join(roomId);
         io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
     });
@@ -210,13 +214,34 @@ io.on("connection", (socket) => {
         var username = users.get(socket.id);
         var roomId = room.getRoomId(users.get(socket.id));
         
-        // check whether the room is removed after leaving
+        // check whether the room is still exist after leaving
         socket.leave(roomId);
         if(room.leaveRoom(username)) {
-            io.to(roomId).emit("room-removed");
-        } else {
             io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
         }
+    });
+
+    socket.on("spectate", () => {
+        if(!users.has(socket.id)) return;
+        if(!room.getRoomId(users.get(socket.id))) return;
+
+        var username = users.get(socket.id);
+        var roomId = room.getRoomId(users.get(socket.id));
+
+        if(!room.spectate(username)) return;
+        io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
+    });
+
+    socket.on("play", () => {
+        if(!users.has(socket.id)) return;
+        if(!room.getRoomId(users.get(socket.id))) return;
+
+        var username = users.get(socket.id);
+        var roomId = room.getRoomId(users.get(socket.id));
+        var res = room.play(username);
+        console.log(res);
+        if(!res) return;
+        io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
     });
 
     // Forget password page
@@ -415,6 +440,7 @@ io.on("connection", (socket) => {
             var roomId = room.getRoomId(username);
             if (roomId) {
                 socket.emit("room-state", JSON.stringify(room.getRoomState(roomId)));
+                socket.join(roomId);
                 console.log(username + " reconnected to the game");
             }
         });

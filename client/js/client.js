@@ -49,7 +49,12 @@ const closeChangeEmailBtn = document.getElementById("close-change-email-button")
 const roomWrapper = document.getElementById("room-wrapper");
 const roomBox = document.getElementById("room-box");
 const roomInfo = document.getElementById("room-information");
+const roomIdInfo = document.getElementById("room-id");
+const playersInfo = document.getElementById("players");
+const spectatorsInfo = document.getElementById("spectators");
 const startBtn = document.getElementById("start-button");
+const spectateBtn = document.getElementById("spectate-button");
+const playBtn = document.getElementById("play-button");
 const leaveBtn = document.getElementById("leave-button");
 
 // Join Room Form
@@ -283,7 +288,6 @@ function updateChangeEmailError(errorCode) {
 
 function updateJoinError(errorCode) {
     document.getElementById("join-error").innerText = "";
-    console.log(errorCode);
     if (errorCode & 1) {
         document.getElementById("join-error").innerText += "Invalid Room ID";
     } else if (errorCode & 2) {
@@ -294,22 +298,44 @@ function updateJoinError(errorCode) {
 function updateRoomState(state) {
     if(!state) {
         roomWrapper.style.display = "none";
-        roomInfo.innerHTML = "";
         return;
     }
     
-    roomWrapper.style.display = "block";
-    var html = `<div id="room-id"><center>${state.roomId}</center></div>`;
-    html += `<div>Host: <span id="room-host">${state.host}</span></div>`;
-    html += `<div>Participant: <span id="room-participant">${state.participant ? state.participant : "---"}</div>`;
-    // html += `<div id="room-spectator"></div>`
-    roomInfo.innerHTML = html;
+    roomIdInfo.innerText = state.roomId;
+    var playersHTML = "";
+    playersHTML += `<div>${state.players[0]}<span> (host)</span></div>`;
+    playersHTML += `<div>${state.players[1] || "-----"}</div>`;
+    playersInfo.innerHTML = playersHTML;
+
+    var spectating = false;
+    var spectatorsHTML = "";
+    if(state.spectators.length > 0) {
+        spectatorsHTML += "<div>Spectators:&nbsp;</div>";
+        spectatorsHTML += "<div class='vertical-container'>";
+        state.spectators.forEach(spectator => {
+            spectatorsHTML += `<div>${spectator}</div>`;
+            if(spectator == username) spectating = true;
+        });
+        spectatorsHTML += "</div>";
+    }
+    spectatorsInfo.innerHTML = spectatorsHTML;
     
-    if(state.host == username) {
-        startBtn.style.display = "block";
+    if(state.players[0] == username) {
+        if(state.players.length == 2) startBtn.style.display = "block";
+        else startBtn.style.display = "none";
+        spectateBtn.style.display = "none";
+        playBtn.style.display = "none";
     } else {
         startBtn.style.display = "none";
     }
+    if(state.players[1] == username) {
+        spectateBtn.style.display = "block";
+        playBtn.style.display = "none";
+    } else if(spectating) {
+        spectateBtn.style.display = "none";
+        if(!state.players.length < 2) playBtn.style.display = "block";
+    }
+    roomWrapper.style.display = "block";
 }
 
 // Self Executing Function
@@ -456,6 +482,14 @@ openRoomBtn.addEventListener("click", () => {
 leaveBtn.addEventListener("click", () => {
     leaveRoom(socket);
 });
+
+spectateBtn.addEventListener("click", () => {
+    spectate(socket);
+});
+
+playBtn.addEventListener("click", () => {
+    play(socket);
+});
 // })();
 
 const login = (socket) => {
@@ -507,10 +541,18 @@ const joinRoom = (socket) => {
 
 const openRoom = (socket) => {
     socket.emit("open-room");
-}
+};
 
 const leaveRoom = (socket) => {
     roomWrapper.style.display = "none";
     socket.emit("leave-room");
     updateRoomState(null);
-}
+};
+
+const spectate = (socket) => {
+    socket.emit("spectate");
+};
+
+const play = (socket) => {
+    socket.emit("play");
+};

@@ -111,10 +111,6 @@ div {
     text-align: center;
 }
 
-#room-information span {
-    color: #bbb;
-}
-
 #room-chat-content {
     max-width: 80%;
     flex-grow: 1;
@@ -135,4 +131,17 @@ div {
     text-align: left;
     width:100%;
     word-wrap: break-word;
+}
+
+.message-count {
+    position: relative;
+    display: block;
+    font: bold 14px/13px Helvetica, Verdana, Tahoma;
+    text-align: center;
+    margin: 0;
+    top: 2px;
+}
+
+.username span {
+    color: #bbb;
 }

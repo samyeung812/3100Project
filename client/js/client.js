@@ -57,6 +57,7 @@ const spectateBtn = document.getElementById("spectate-button");
 const playBtn = document.getElementById("play-button");
 const leaveBtn = document.getElementById("leave-button");
 const roomChatBtn = document.getElementById("room-chat-button");
+const unreadRoomChat = document.getElementById("unread-room-chat");
 
 // Join Room Form
 const joinWrapper = document.getElementById("join-wrapper");
@@ -78,6 +79,7 @@ const gameBoard = document.getElementById("game-board");
 // Session Storage of JTW
 var sessionToken;
 var username;
+var unreadRoomChatCnt = 0;
 
 // Show Registration Form
 createBtn.addEventListener("click", showRegistration);
@@ -174,6 +176,8 @@ function closeJoinRoomWrapper() {
 
 roomChatBtn.addEventListener("click", showRoomChat);
 function showRoomChat() {
+    unreadRoomChatCnt = 0;
+    unreadRoomChat.innerText = "";
     roomChatWrapper.style.display = "block";
 }
 
@@ -326,6 +330,7 @@ function updateRoomState(state) {
 
     // host
     var div = document.createElement("div");
+    div.className = "username";
     div.innerText = state.players[0];
     var span = document.createElement("span");
     span.innerText = " (host)";
@@ -334,7 +339,14 @@ function updateRoomState(state) {
 
     // other player
     div = document.createElement("div");
-    div.innerText = state.players[1] || "-----";
+    div.className = "username";
+    if(state.players[1]) {
+        div.innerText = state.players[1];
+    } else {
+        span = document.createElement("span");
+        span.innerText = "-----";
+        div.appendChild(span);
+    }
     playersInfo.appendChild(div);
 
     var spectating = false;
@@ -488,6 +500,10 @@ socket.on("room-state", (data) => {
 socket.on("room-msg", (data) => {
     var {username, msg} = JSON.parse(data);
     roomChatContent.appendChild(toHTMLMessage(username, msg));
+    if(roomChatWrapper.style.display != "block") {
+        unreadRoomChatCnt++;
+        unreadRoomChat.innerText = unreadRoomChatCnt;
+    }
 });
 
 socket.on("join-room-result", (errorCode) => {

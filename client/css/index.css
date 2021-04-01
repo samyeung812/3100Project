@@ -81,14 +81,14 @@ div {
 .horizontal-container {
     display: flex;
     flex-direction: row;
-    justify-content: space-around;
+    justify-content: space-between;
     align-items: flex-start;
 }
 
 .vertical-container {
     display: flex;
-    text-align: right;
     flex-direction: column;
+    justify-content: space-between;
 }
 
 #game-board {
@@ -112,25 +112,28 @@ div {
 }
 
 #room-chat-content {
-    max-width: 80%;
-    flex-grow: 1;
-    flex-basis: 0;
+    width: 70%;
+    max-height: 250px;
+    overflow: auto;
 }
 
 .content {
-    justify-content: space-between;
     width: 100%;
 }
 
 .username {
+    display: block;
+    flex: 0 0 auto;
     color: yellow;
     word-wrap: break-word;
 }
 
 .msg {
-    text-align: left;
-    width:100%;
+    display: block;
+    flex: 1 0 auto;
+    width:100px;
     word-wrap: break-word;
+    text-align: left;
 }
 
 .message-count {
@@ -144,4 +147,8 @@ div {
 
 .username span {
     color: #bbb;
+}
+
+#leaderboard {
+    min-width: 50%;
 }

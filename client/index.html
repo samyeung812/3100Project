@@ -31,7 +31,7 @@
         <form id="registration-box" class="box">
             <div>
                 Username
-                <input type="text" name="username" placeholder="username (3-15 length)">
+                <input type="text" name="username" placeholder="username (3-20) length)">
                 <span id="register-username-error" class="error"></span>
             </div>
             <div>
@@ -78,7 +78,7 @@
             <button id="time-button">Time Mode</button>
             <button id="join-button">Join Battle</button>
             <button id="open-button">Open Room</button>
-            <button id="score-button">Score Board</button>
+            <button id="leaderboard-button">Leader Board</button>
             <button id="ranking-button">Ranking</button>
             <button id="setting-button">Setting</button>
         </div>
@@ -178,7 +178,18 @@
                 <input class="submit" type="submit" value="Join">
                 <button id="close-join-button" type="button">Close</button>
             </div>
-        </div>
+        </form>
+    </div>
+
+    <div id="leaderboard-wrapper" class="wrapper popup">
+        <form id="leaderboard-box" class="box">
+            <div class="horizontal-container">
+                <input type="text" name="username" placeholder="search player">
+                <input class="submit" type="submit" value="Search">
+            </div>
+            <div id="leaderboard" class="vertical-container"></div>
+            <button id="close-leaderboard-button" type="button">Close</button>
+        </form>
     </div>
 
     <canvas id = "game-board"></canvas>

@@ -25,6 +25,7 @@ const menuWrapper = document.getElementById("menu-wrapper");
 const battleBtn = document.getElementById("battle-button");
 const openRoomBtn = document.getElementById("open-button");
 const joinBtn = document.getElementById("join-button");
+const leaderboardBtn = document.getElementById("leaderboard-button");
 const settingBtn = document.getElementById("setting-button");
 
 // Setting Menu
@@ -70,6 +71,12 @@ const roomChatWrapper = document.getElementById("room-chat-wrapper");
 const roomChatBox = document.getElementById("room-chat-box");
 const closeRoomChatBtn = document.getElementById("close-room-chat-button");
 const roomChatContent = document.getElementById("room-chat-content");
+
+// Leaderboard
+const leaderboardWrapper = document.getElementById("leaderboard-wrapper");
+const leaderboardBox = document.getElementById("leaderboard-box");
+const leaderboard = document.getElementById("leaderboard");
+const closeLeaderboardBtn = document.getElementById("close-leaderboard-button");
 
 // Game Board
 const gameBoard = document.getElementById("game-board");
@@ -185,6 +192,13 @@ closeRoomChatBtn.addEventListener("click", closeRoomChat);
 function closeRoomChat() {
     roomChatWrapper.style.display = "none";
     roomChatBox.reset();
+}
+
+closeLeaderboardBtn.addEventListener("click", closeLeaderboard);
+function closeLeaderboard() {
+    leaderboardWrapper.style.display = "none";
+    leaderboard.innerHTML = "";
+    leaderboardBox.reset();
 }
 
 // Show Main Menu and Hide Game Board
@@ -331,8 +345,11 @@ function updateRoomState(state) {
     // host
     var div = document.createElement("div");
     div.className = "username";
-    div.innerText = state.players[0];
+    div.innerText = state.players[0].name;
     var span = document.createElement("span");
+    span.innerHTML = ` (${state.players[0].ranking}) `;
+    div.appendChild(span);
+    span = document.createElement("span");
     span.innerText = " (host)";
     div.appendChild(span);
     playersInfo.appendChild(div);
@@ -341,7 +358,10 @@ function updateRoomState(state) {
     div = document.createElement("div");
     div.className = "username";
     if(state.players[1]) {
-        div.innerText = state.players[1];
+        div.innerText = state.players[1].name;
+        span = document.createElement("span");
+        span.innerHTML = ` (${state.players[1].ranking}) `;
+        div.appendChild(span);
     } else {
         span = document.createElement("span");
         span.innerText = "-----";
@@ -356,14 +376,18 @@ function updateRoomState(state) {
         spectatorsDiv.className = "vertical-container";
         state.spectators.forEach(spectator => {
             var div = document.createElement("div");
-            div.innerText = spectator;
+            div.className = "username";
+            div.innerText = spectator.name;
+            span = document.createElement("span");
+            span.innerHTML = ` (${spectator.ranking}) `;
+            div.appendChild(span);
             spectatorsDiv.appendChild(div);
-            if(spectator == username) spectating = true;
+            if(spectator.name == username) spectating = true;
         });
         spectatorsInfo.appendChild(spectatorsDiv);
     }
     
-    if(state.players[0] == username) {
+    if(state.players[0].name == username) {
         if(state.players.length == 2) startBtn.style.display = "block";
         else startBtn.style.display = "none";
         spectateBtn.style.display = "none";
@@ -371,7 +395,7 @@ function updateRoomState(state) {
     } else {
         startBtn.style.display = "none";
     }
-    if(state.players[1] == username) {
+    if(state.players[1] && state.players[1].name == username) {
         spectateBtn.style.display = "block";
         playBtn.style.display = "none";
     } else if(spectating) {
@@ -381,6 +405,7 @@ function updateRoomState(state) {
     roomWrapper.style.display = "block";
 }
 
+// Convert the message into a div element
 function toHTMLMessage(username, msg) {
     var contentDiv = document.createElement("div");
     contentDiv.className = "content horizontal-container"
@@ -396,6 +421,25 @@ function toHTMLMessage(username, msg) {
     div.innerText = msg;
     contentDiv.appendChild(div);
     return contentDiv;
+}
+
+function updateLeaderboard(players) {
+    leaderboard.innerHTML = "";
+    players.forEach(player => {
+        var outterDiv = document.createElement("div");
+        outterDiv.className = "record horizontal-container";
+        var div = document.createElement("div");
+        div.className = "username";
+        div.innerText = player.username;
+        div.innerHTML += "&nbsp;"
+        outterDiv.appendChild(div);
+        
+        div = document.createElement("div");
+        div.innerText = player.ranking;
+        outterDiv.appendChild(div);
+        
+        leaderboard.appendChild(outterDiv);
+    });
 }
 
 // Self Executing Function
@@ -499,10 +543,20 @@ socket.on("room-state", (data) => {
 
 socket.on("room-msg", (data) => {
     var {username, msg} = JSON.parse(data);
+
+    // check whether the client is at the bottom of the chat box
+    var atBottom = roomChatContent.scrollTop == roomChatContent.scrollHeight - roomChatContent.clientHeight;
+
+    // add new message to the chat box
     roomChatContent.appendChild(toHTMLMessage(username, msg));
-    if(roomChatWrapper.style.display != "block") {
+
+    if (roomChatWrapper.style.display != "block") {
+        // update unread message
         unreadRoomChatCnt++;
         unreadRoomChat.innerText = unreadRoomChatCnt;
+    } else if (atBottom) {
+        // scroll to bottom after adding new message
+        roomChatContent.scrollTop = roomChatContent.scrollHeight - roomChatContent.clientHeight;
     }
 });
 
@@ -512,6 +566,11 @@ socket.on("join-room-result", (errorCode) => {
         closeJoinRoomWrapper();
     }
     updateJoinError(errorCode); 
+});
+
+socket.on("leaderboard-result", (result) => {
+    var players = JSON.parse(result);
+    updateLeaderboard(players);
 });
 
 loginBox.onsubmit = () => { 
@@ -549,6 +608,11 @@ roomChatBox.onsubmit = () => {
     return false;
 };
 
+leaderboardBox.onsubmit = () => {
+    searchRanking(socket);
+    return false;
+};
+
 openRoomBtn.addEventListener("click", () => {
     openRoom(socket);
 });
@@ -563,6 +627,10 @@ spectateBtn.addEventListener("click", () => {
 
 playBtn.addEventListener("click", () => {
     play(socket);
+});
+
+leaderboardBtn.addEventListener("click", () => {
+    showLeaderboard(socket);
 });
 // })();
 
@@ -635,4 +703,16 @@ const roomChat = (socket) => {
     var msg = roomChatBox.querySelector("input[name='message']").value;
     roomChatBox.reset();
     socket.emit("room-chat", msg);
+};
+
+const showLeaderboard = (socket) => {
+    leaderboard.innerHTML = "";
+    leaderboardWrapper.style.display = "block";
+    socket.emit("get-leaderboard");
+};
+
+const searchRanking = (socket) => {
+    var username = leaderboardBox.querySelector("input[name='username']").value;
+    leaderboardBox.reset();
+    socket.emit("search-ranking", username);
 };

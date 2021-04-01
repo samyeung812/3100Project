@@ -6,9 +6,10 @@
 // node server.js
 
 // SQL
-// CREATE DATABASE nodeServerDB;
-// CREATE TABLE accounts (username varchar(20), email varchar(254), password varchar(30));
-// CREATE TABLE ranking (username varchar(20), rank bigint);
+// CREATE DATABASE nodeserverdb;
+// CREATE TABLE accounts (userid int NOT NULL AUTO_INCREMENT, username varchar(20) NOT NULL, email varchar(200) NOT NULL, password varchar(100) NOT NULL, PRIMARY KEY (userid));
+// CREATE TABLE leaderboard (userid int NOT NULL AUTO_INCREMENT, ranking bigint, PRIMARY KEY (userid));
+// CREATE TABLE friendship ();
 
 const express = require("express");
 const app = express();
@@ -86,6 +87,7 @@ const bcrypt = require("bcrypt");
 
 // Library for JSON Web Token (use for generating JSON web token and authentication)
 const jwt = require("jsonwebtoken");
+const { userInfo } = require("os");
 
 // Secret Key for JTW Encryption and Decryption
 const JWT_SECRET_KEY = "2797822dc6bbfd45e3c23caa9307672770651c1618a1cdb29be33d7bb1eeef1840a274ee32a0d86aa9a550c9119fdaba";
@@ -94,12 +96,12 @@ const JWT_SECRET_KEY = "2797822dc6bbfd45e3c23caa9307672770651c1618a1cdb29be33d7b
 const usernameFormat = /(?=.{3,20}$)^\S.*[^\s]$/;
 // 8-30 characters with minimal 1 upper-case, 1 lower-case, 1 number, 1 special character
 const passwordFormat = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,30}$/;
-// 6-254 chacaters that satisfies Mail-RFC822-Address format
-const emailFormat = /(?=.{6,254}$)(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
+// 6-100 chacaters that satisfies Mail-RFC822-Address format
+const emailFormat = /(?=.{6,200}$)(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
 
 // Store User Online Information
-var users = new Map();  // get username by socket id
-var socketIds = new Map();  //  get socket id by username
+var usersInfo = new Map();  // get user info by socket id
+var socketIds = new Map();  //  get socket id by user id
 
 // Authenticate JSON Web Token
 function authenticateJWT (token, callback) {
@@ -114,40 +116,46 @@ function authenticateJWT (token, callback) {
 }
 
 // Update user online information
-function updateUserConnection(username, socketId)
+function updateUserConnection(user, socketId)
 {
     // check whether user logged in somewhere else
-    if (socketIds.has(username) && socketIds.get(username) != socketId) {
+    if (socketIds.has(user.id) && socketIds.get(user.id) != socketId) {
         // try to inform the user and disconnect
-        var target = socketIds.get(username);
+        var target = socketIds.get(user.id);
         io.to(target).emit("error", "Login Somewhere Else");
         io.sockets.sockets.get(target).disconnect();
-        users.delete(target);
+        usersInfo.delete(target);
     }
 
     // check whether the socket logged in for other account
-    if (users.has(socketId) && users.get(socketId) != username) {
+    if (usersInfo.has(socketId) && usersInfo.get(socketId).id != user.id) {
         // try to inform the user and disconnect
-        var target = socketIds.get(users.get(socketId));
+        var target = socketIds.get(usersInfo.get(socketId).id);
         io.to(target).emit("error", "Login Somewhere Else");
         io.sockets.sockets.get(target).disconnect();
-        socketIds.delete(username);
+        socketIds.delete(user.id);
     }
 
     // set user online information
-    socketIds.set(username, socketId);
-    users.set(socketId, username);
+    socketIds.set(user.id, socketId);
+
+    var queryString = "SELECT ranking FROM leaderboard WHERE userid=?;";
+    SQLQuery(queryString, [user.id], (result, error) => {
+        if(!result) return;
+        user.ranking = result[0].ranking;
+        usersInfo.set(socketId, user);
+    });
 }
 
 // Detect whether user is disconnected from the game
-function disconnectUser(username) {
+function disconnectUser(user) {
     // check whether user logged in
-    if (!socketIds.has(username) && room.getRoomId(username)) {
+    if (!socketIds.has(user.id) && room.getRoomId(user)) {
         // remove user from the game
-        var roomId = room.getRoomId(username);
-        room.leaveRoom(username);
+        var roomId = room.getRoomId(user);
+        room.leaveRoom(user);
         io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
-        console.log(username + " disconnected from the room");
+        console.log(user.name + " disconnected from the room");
     }
 }
 
@@ -170,25 +178,26 @@ io.on("connection", (socket) => {
     // Wait for user reconnection
     socket.on("disconnect", () => {
         // check if user is not logged in
-        if (!users.has(socket.id)) return;
+        if (!usersInfo.has(socket.id)) return;
 
         // wait user to reconnect for 1 minutes
         var minutes = 1;
-        if (room.getRoomId(users.get(socket.id))) setTimeout(disconnectUser, minutes * 60 * 1000, users.get(socket.id));
+        if (room.getRoomId(usersInfo.get(socket.id).id)) setTimeout(disconnectUser, minutes * 60 * 1000, usersInfo.get(socket.id));
 
         // remove user online information
-        console.log(users.get(socket.id), "logout");
-        socketIds.delete(users.get(socket.id));
-        users.delete(socket.id);
+        console.log(usersInfo.get(socket.id).name, "logout");
+        socketIds.delete(usersInfo.get(socket.id).id);
+        usersInfo.delete(socket.id);
     });
 
     // Join room
     socket.on("join-room", (roomId) => {
-        if(!users.has(socket.id)) return;
-        var username = users.get(socket.id);
-        if(room.getRoomId(username)) return;
+        if(!usersInfo.has(socket.id)) return;
 
-        var errorCode = room.joinRoom(username, roomId);
+        var user = usersInfo.get(socket.id);
+        if(room.getRoomId(user)) return;
+
+        var errorCode = room.joinRoom(user, roomId);
         socket.emit("join-room-result", errorCode);
         if(errorCode == 0) {
             socket.join(roomId);
@@ -198,58 +207,80 @@ io.on("connection", (socket) => {
 
     // Open new room for the user
     socket.on("open-room", () => {
-        if(!users.has(socket.id)) return;
-        if(room.getRoomId(users.get(socket.id))) return;
+        if(!usersInfo.has(socket.id)) return;
+        if(room.getRoomId(usersInfo.get(socket.id))) return;
 
-        var roomId = room.openRoom(users.get(socket.id), false);
+        var roomId = room.openRoom(usersInfo.get(socket.id), false);
         socket.join(roomId);
         io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
     });
 
     // Leave room
     socket.on("leave-room", () => {
-        if(!users.has(socket.id)) return;
-        if(!room.getRoomId(users.get(socket.id))) return;
+        if(!usersInfo.has(socket.id)) return;
+        if(!room.getRoomId(usersInfo.get(socket.id))) return;
 
-        var username = users.get(socket.id);
-        var roomId = room.getRoomId(users.get(socket.id));
+        var user = usersInfo.get(socket.id);
+        var roomId = room.getRoomId(user);
         
         // check whether the room is still exist after leaving
         socket.leave(roomId);
-        if(room.leaveRoom(username)) {
+        if(room.leaveRoom(user)) {
             io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
         }
     });
 
     socket.on("room-chat", (msg) => {
-        if(!users.has(socket.id)) return;
-        if(!room.getRoomId(users.get(socket.id))) return;
+        if(!usersInfo.has(socket.id)) return;
+        if(!room.getRoomId(usersInfo.get(socket.id))) return;
+        if(typeof msg != "string" || msg.length == 0) return;
+
+        var user = usersInfo.get(socket.id);
+        var roomId = room.getRoomId(user);
         
-        var username = users.get(socket.id);
-        var roomId = room.getRoomId(users.get(socket.id));
-        
-        io.to(roomId).emit("room-msg", JSON.stringify({username: username, msg: msg}));
+        io.to(roomId).emit("room-msg", JSON.stringify({username: user.name, msg: msg}));
     });
 
     socket.on("spectate", () => {
-        if(!users.has(socket.id)) return;
-        if(!room.getRoomId(users.get(socket.id))) return;
+        if(!usersInfo.has(socket.id)) return;
+        if(!room.getRoomId(usersInfo.get(socket.id))) return;
 
-        var username = users.get(socket.id);
-        var roomId = room.getRoomId(users.get(socket.id));
+        var user = usersInfo.get(socket.id);
+        var roomId = room.getRoomId(user);
 
-        if(!room.spectate(username)) return;
+        if(!room.spectate(user)) return;
         io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
     });
 
-    socket.on("play", () => {
-        if(!users.has(socket.id)) return;
-        if(!room.getRoomId(users.get(socket.id))) return;
+    socket.on("get-leaderboard", () => {
+        if(!usersInfo.has(socket.id)) return;
 
-        var username = users.get(socket.id);
-        var roomId = room.getRoomId(users.get(socket.id));
-        var res = room.play(username);
-        console.log(res);
+        var queryString = "SELECT accounts.username, leaderboard.ranking FROM leaderboard INNER JOIN accounts ON leaderboard.userid = accounts.userid ORDER BY ranking DESC LIMIT 10;";
+        SQLQuery(queryString, [], (result, erorr) => {
+            if(!result) return;
+            socket.emit("leaderboard-result", JSON.stringify(result));
+        });
+    });
+
+    socket.on("search-ranking", (username) => {
+        if(typeof username != "string") return;
+        if(!usersInfo.has(socket.id)) return;
+
+        var queryString = "SELECT accounts.username, leaderboard.ranking FROM leaderboard INNER JOIN accounts ON leaderboard.userid = accounts.userid WHERE accounts.username=?;";
+        SQLQuery(queryString, [username], (result, error) => {
+            if(!result) return;
+            socket.emit("leaderboard-result", JSON.stringify(result));
+        });
+    });
+
+    socket.on("play", () => {
+        if(!usersInfo.has(socket.id)) return;
+        if(!room.getRoomId(usersInfo.get(socket.id))) return;
+
+        var user = usersInfo.get(socket.id);
+        var roomId = room.getRoomId(user);
+
+        var res = room.play(user);
         if(!res) return;
         io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
     });
@@ -260,7 +291,7 @@ io.on("connection", (socket) => {
         authenticateJWT(input.token , async (res) => {
             if(!res || !res.forget) return;
 
-            var username = res.username;
+            var user = res.user;
             var { newPassword, confirmPassword } = input;
 
             // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
@@ -275,14 +306,14 @@ io.on("connection", (socket) => {
             if (newPassword != confirmPassword) errorCode |= 256;
 
             // sql query string
-            var queryString = "UPDATE accounts SET password=? WHERE username=?;";
+            var queryString = "UPDATE accounts SET password=? WHERE userid=?;";
 
             if(errorCode == 0) {
                 // encrypt the new password
                 const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
                 // send query to sql database
-                SQLQuery(queryString, [hashedNewPassword, username], (result, error) => {
+                SQLQuery(queryString, [hashedNewPassword, user.id], (result, error) => {
                     if(!result) {
                         errorCode |= 8;
                     }
@@ -298,7 +329,7 @@ io.on("connection", (socket) => {
         var username = input.username;
 
         // find the email of the user
-        var queryString = "SELECT email FROM accounts WHERE username=?;";
+        var queryString = "SELECT userid, email FROM accounts WHERE username=?;";
         SQLQuery(queryString, [username], (result, error) => {
             if (!result || !result[0]) {
                 // forget password result equal 1 implies invalid username
@@ -307,7 +338,11 @@ io.on("connection", (socket) => {
             }
 
             // the reset password link in the email will be expired in 5 minutes
-            var token = jwt.sign({ forget: true, username: username }, JWT_SECRET_KEY, { expiresIn: '5min' });
+            var user = {
+                id: result[0].userid,
+                name: username
+            };
+            var token = jwt.sign({ forget: true, user: user }, JWT_SECRET_KEY, { expiresIn: '5min' });
 
             // append the token to the link and send it to the email of the user
             mail.sendEmail(result[0].email, token);
@@ -319,10 +354,10 @@ io.on("connection", (socket) => {
 
     // Change user password
     socket.on("change-password", async (data) => {
-        if(!users.has(socket.id)) return;
+        if(!usersInfo.has(socket.id)) return;
 
         var input = JSON.parse(data);
-        var username = users.get(socket.id);
+        var user = usersInfo.get(socket.id);
         var { password, newPassword, confirmPassword } = input;
         
         // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
@@ -337,11 +372,11 @@ io.on("connection", (socket) => {
         if (newPassword != confirmPassword) errorCode |= 256;
 
         // sql query string
-        var queryString1 = "SELECT password FROM accounts WHERE username=?";
-        var queryString2 = "UPDATE accounts SET password=? WHERE username=?;";
+        var queryString1 = "SELECT password FROM accounts WHERE userid=?";
+        var queryString2 = "UPDATE accounts SET password=? WHERE userid=?;";
 
         // send query to sql database
-        SQLQuery(queryString1, [username], compareAndUpdatePassword);
+        SQLQuery(queryString1, [user.id], compareAndUpdatePassword);
         
         async function compareAndUpdatePassword (result, error) {
             if(!result) {
@@ -361,7 +396,7 @@ io.on("connection", (socket) => {
                     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
                     // send query to sql database
-                    SQLQuery(queryString2, [hashedNewPassword, username], (result, error) => {
+                    SQLQuery(queryString2, [hashedNewPassword, user.id], (result, error) => {
                         if(!result) {
                             errorCode |= 8;
                         }
@@ -377,10 +412,10 @@ io.on("connection", (socket) => {
     
     // Change user email
     socket.on("change-email", async (data) => {
-        if(!users.has(socket.id)) return;
+        if(!usersInfo.has(socket.id)) return;
 
         var input = JSON.parse(data);
-        var username = users.get(socket.id);
+        var user = usersInfo.get(socket.id);
 
         var { password, email } = input;
         
@@ -394,11 +429,11 @@ io.on("connection", (socket) => {
         if (!emailMatch || emailMatch[0] != email) errorCode |= 4;
 
         // sql query string
-        var queryString1 = "SELECT password FROM accounts WHERE username=?";
-        var queryString2 = "UPDATE accounts SET email=? WHERE username=?;";
+        var queryString1 = "SELECT password FROM accounts WHERE userid=?";
+        var queryString2 = "UPDATE accounts SET email=? WHERE userid=?;";
 
         // send query to sql database
-        SQLQuery(queryString1, [username], compareAndUpdateEmail);
+        SQLQuery(queryString1, [user.id], compareAndUpdateEmail);
         
         async function compareAndUpdateEmail (result, error) {
             if(!result) {
@@ -415,7 +450,7 @@ io.on("connection", (socket) => {
             if (await bcrypt.compare(password, hashedPassword)) {
                 if(errorCode == 0) {
                     // send query to sql database
-                    SQLQuery(queryString2, [email, username], (result, error) => {
+                    SQLQuery(queryString2, [email, user.id], (result, error) => {
                         if(!result) {
                             errorCode |= 8;
                         }
@@ -429,7 +464,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("token-login", (token) => {
-        if(users.has(socket.id)) return;
+        if(usersInfo.has(socket.id)) return;
 
         // authenticate user JWT
         authenticateJWT(token, (res) => {
@@ -439,25 +474,25 @@ io.on("connection", (socket) => {
             }
 
             // send login message to user
-            var username = res.username;
-            socket.emit("login", username);
-            console.log(username, "login");
+            var user = res.user;
+            socket.emit("login", user.name);
+            console.log(user.name, "login");
             
             // update user online information
-            updateUserConnection(username, socket.id);
+            updateUserConnection(user, socket.id);
 
             // check whether user disconnected from game and reconenct it
-            var roomId = room.getRoomId(username);
+            var roomId = room.getRoomId(user);
             if (roomId) {
                 socket.emit("room-state", JSON.stringify(room.getRoomState(roomId)));
                 socket.join(roomId);
-                console.log(username + " reconnected to the game");
+                console.log(user.name + " reconnected to the game");
             }
         });
     });
     
     socket.on("get-token", async (data) => {
-        if (users.has(socket.id)) return;
+        if (usersInfo.has(socket.id)) return;
 
         var input = JSON.parse(data);
         var { username, password } = input;
@@ -468,7 +503,7 @@ io.on("connection", (socket) => {
         var errorCode = 0;
 
         // sql query string
-        var queryString = "SELECT password FROM accounts WHERE username=?";
+        var queryString = "SELECT userid, password FROM accounts WHERE username=?";
         SQLQuery(queryString, [username], async (result, error) => {
             if(!result) {
                 errorCode |= 8;
@@ -484,7 +519,11 @@ io.on("connection", (socket) => {
             // compare the encrypted password with user input
             if (await bcrypt.compare(password, hashedPassword)) {
                 // send JWT to user if correct
-                var token = jwt.sign({ username: username }, JWT_SECRET_KEY, { expiresIn: '7d' });
+                var user = {
+                    id: result[0].userid,
+                    name: username
+                }
+                var token = jwt.sign({ user: user }, JWT_SECRET_KEY, { expiresIn: '7d' });
                 socket.emit("access-token", token);
             } else {
                 errorCode |= 64;
@@ -494,7 +533,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("register", async (data) => {
-        if (users.has(socket.id)) return;
+        if (usersInfo.has(socket.id)) return;
 
         var input = JSON.parse(data);
         var { username, password, confirmPassword, email } = input;
@@ -517,6 +556,7 @@ io.on("connection", (socket) => {
         var queryString1 = "SELECT COUNT(*) AS count FROM accounts WHERE username=?;";
         var queryString2 = "SELECT COUNT(*) AS count FROM accounts WHERE email=?;";
         var queryString3 = "INSERT INTO accounts (username, email, password) VALUES (?, ?, ?);";
+        var queryString4 = "INSERT INTO leaderboard (ranking) VALUES (0);";
         
         SQLQuery(queryString1 + queryString2, [username, email], validateAndCreate);
 
@@ -539,7 +579,7 @@ io.on("connection", (socket) => {
                 // encrypt user password
                 const hashedPassword = await bcrypt.hash(password, 10);
 
-                SQLQuery(queryString3, [username, email, hashedPassword], (result, error) => {
+                SQLQuery(queryString3 + queryString4, [username, email, hashedPassword], (result, error) => {
                     if(!result) {
                         errorCode |= 8;
                     }

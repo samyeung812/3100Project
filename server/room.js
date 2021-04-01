@@ -8,7 +8,7 @@ module.exports = {
     play
 }
 
-var rooms = new Map();  // get room id by username
+var rooms = new Map();  // get room id by user id
 var roomStates = new Map(); // get room state by room id
 
 // Generate random code with specific length
@@ -21,9 +21,9 @@ function generateCode(len) {
     return res;
 }
 
-function getRoomId(username) {
-    if(!rooms.has(username)) return null;
-    return rooms.get(username);
+function getRoomId(user) {
+    if(!rooms.has(user.id)) return null;
+    return rooms.get(user.id);
 }
 
 function getRoomState(roomId) {
@@ -31,27 +31,27 @@ function getRoomState(roomId) {
     return roomStates.get(roomId);
 }
 
-function initRoomState(roomId, username, ranked) {
+function initRoomState(roomId, user, ranked) {
     var state = {
         roomId: roomId,
         start: false,
         ranked: ranked,
-        players: [username],
+        players: [user],
         spectators: [],
         gamestate: null
     }
     return state;
 }
 
-function leaveRoom(username) {
-    var roomId = getRoomId(username);
+function leaveRoom(user) {
+    var roomId = getRoomId(user);
     var state = getRoomState(roomId);
 
     if(!roomId || !state) return;
 
-    state.players = state.players.filter(e => e !== username);
-    state.spectators = state.spectators.filter(e => e !== username);
-    rooms.delete(username);
+    state.players = state.players.filter(e => e.id !== user.id);
+    state.spectators = state.spectators.filter(e => e.id !== user.id);
+    rooms.delete(user.id);
 
     if(state.players.length == 0) {
         if(state.spectators.length == 0) {
@@ -64,42 +64,42 @@ function leaveRoom(username) {
     return true;
 }
 
-function openRoom(username, ranked) {
+function openRoom(user, ranked) {
     var roomId = generateCode(6);
     while(rooms.has(roomId)) {
         roomId = generateCode(6);
     }
-    rooms.set(username, roomId);
-    roomStates.set(roomId, initRoomState(roomId, username, ranked));
+    rooms.set(user.id, roomId);
+    roomStates.set(roomId, initRoomState(roomId, user, ranked));
     return roomId;
 }
 
-function joinRoom(username, roomId) {
+function joinRoom(user, roomId) {
     var state = getRoomState(roomId);
     if(!state) return 1;
-    if(!state.players.length < 2) state.players.push(username);
-    else state.spectators.push(username);
-    rooms.set(username, roomId);
+    if(!state.players.length < 2) state.players.push(user);
+    else state.spectators.push(user);
+    rooms.set(user.id, roomId);
     return 0;
 }
 
-function spectate(username) {
-    var roomId = getRoomId(username);
+function spectate(user) {
+    var roomId = getRoomId(user);
     var state = getRoomState(roomId);
     if(state.gamestate) return false;
-    if(username != state.players[1]) return false;
+    if(user.id != state.players[1].id) return false;
     state.players = state.players.splice(0, 1);
-    state.spectators.push(username);
+    state.spectators.push(user);
     return true;
 }
 
-function play(username) {
-    var roomId = getRoomId(username);
+function play(user) {
+    var roomId = getRoomId(user);
     var state = getRoomState(roomId);
     var spectatorsSize = state.spectators.length;
 
-    state.spectators = state.spectators.filter(e => e != username);
+    state.spectators = state.spectators.filter(e => e.id != user.id);
     if(state.spectators.length == spectatorsSize) return false;
-    state.players.push(username);
+    state.players.push(user);
     return true;
 }

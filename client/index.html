@@ -80,6 +80,7 @@
             <button id="open-button">Open Room</button>
             <button id="leaderboard-button">Leader Board</button>
             <button id="ranking-button">Ranking</button>
+            <button id="friend-button">Friend</button>
             <button id="setting-button">Setting</button>
         </div>
     </div>
@@ -189,6 +190,22 @@
             </div>
             <div id="leaderboard" class="vertical-container scrollable"></div>
             <button id="close-leaderboard-button" type="button">Close</button>
+        </form>
+    </div>
+
+    <div id="friend-wrapper" class="wrapper popup">
+        <form id="friend-box" class="box">
+            <div class="horizontal-container">
+                <input type="text" name="username" placeholder="add new friend">
+                <input class="submit" type="submit" value="Send Request">
+            </div>
+            <div class="vertical-container scrollable">
+                <div id="pending-list" class="vertical-container scrollable"></div>
+                <div id="request-list" class="vertical-container scrollable"></div>
+                <div id="friend-list" class="vertical-container scrollable"></div>
+                <div id="block-list" class="vertical-container scrollable"></div>
+            </div>
+            <button id="close-friend-button" type="button">Close</button>
         </form>
     </div>
 

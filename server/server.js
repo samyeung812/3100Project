@@ -7,9 +7,10 @@
 
 // SQL
 // CREATE DATABASE nodeserverdb;
-// CREATE TABLE accounts (userid int NOT NULL AUTO_INCREMENT, username varchar(20) NOT NULL, email varchar(200) NOT NULL, password varchar(100) NOT NULL, PRIMARY KEY (userid));
-// CREATE TABLE leaderboard (userid int NOT NULL AUTO_INCREMENT, ranking bigint, PRIMARY KEY (userid));
-// CREATE TABLE friendship ();
+// CREATE TABLE accounts (userid int NOT NULL AUTO_INCREMENT, username varchar(20) NOT NULL, email varchar(200) NOT NULL, password varchar(100) NOT NULL, PRIMARY KEY (userid, username));
+// CREATE TABLE leaderboard (userid int NOT NULL AUTO_INCREMENT, ranking bigint, FOREIGN KEY (userid) REFERENCES accounts(userid), PRIMARY KEY (userid));
+// CREATE TABLE friendship (id1 int NOT NULL, id2 int NOT NULL, status tinyint NOT NULL, FOREIGN KEY (id1) REFERENCES accounts(userid), FOREIGN KEY (id2) REFERENCES accounts(userid), PRIMARY KEY (id1, id2), CONSTRAINT valid CHECK (id1 < id2));
+// friendship status 0 for friend, 1 for id1_pending_id2, 2 for id2_pending_id1, 3 for id1_blocked_id2, 4 for id2_blocked_id1, 5 for both_blocked
 
 const express = require("express");
 const app = express();
@@ -20,7 +21,7 @@ const io = require("socket.io")(server);
 
 const mail = require("./mail.js");
 const room = require("./room.js");
-const game = require("./game.js");
+// const game = require("./game.js");
 
 // const login = require("./login.js")(io);
 // const game = require("./game.js")(io);
@@ -88,6 +89,7 @@ const bcrypt = require("bcrypt");
 // Library for JSON Web Token (use for generating JSON web token and authentication)
 const jwt = require("jsonwebtoken");
 const { userInfo } = require("os");
+const { query } = require("express");
 
 // Secret Key for JTW Encryption and Decryption
 const JWT_SECRET_KEY = "2797822dc6bbfd45e3c23caa9307672770651c1618a1cdb29be33d7bb1eeef1840a274ee32a0d86aa9a550c9119fdaba";
@@ -285,6 +287,236 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
     });
 
+    // Handle friend request
+    socket.on("send-friend-request", (data) => {
+        if(!usersInfo.has(socket.id)) return;
+
+        var user = usersInfo.get(socket.id);
+        var target = JSON.parse(data);
+
+        // result code: 0 for request sent, 1 for sql connection error, 2 for invalid username, 4 for blocked user,
+        //              8 for being blocked, 16 friend already, 32 for pending already, 64 for become friend
+        var resultCode = 0;
+
+        var queryString1 = "SELECT userid FROM accounts where username=?;";
+        var queryString2 = "SELECT * FROM friendship where id1=? AND id2=?;";
+        var queryString3 = "INSERT INTO friendship (id1, id2, status) VALUES (?,?,?);";
+        var queryString4 = "UPDATE friendship SET status=0 WHERE id1=? AND id2=?;";
+
+        SQLQuery(queryString1, [target], (result, error) => {
+            if(!result) {
+                resultCode |= 1;
+                socket.emit("friend-request-result", resultCode);
+                return;
+            }
+            else if(!result[0]) {
+                resultCode |= 2;
+                socket.emit("friend-request-result", resultCode);
+                return;
+            }
+
+            var id1 = Math.min(user.id, result[0].userid);
+            var id2 = Math.max(user.id, result[0].userid);
+            var smaller = id1 == user.id;
+
+            SQLQuery(queryString2, [id1, id2], (result, error) => {
+                if(!result) {
+                    resultCode |= 1;
+                    socket.emit("friend-request-result", resultCode);
+                    return;
+                }
+                
+                // check whether there is relationship between users
+                if(!result[0]) {
+                    // insert a new relationship if no
+                    SQLQuery(queryString3, [id1, id2, smaller?1:2], (result, error) => {
+                        if(!result) resultCode |= 1;
+                        socket.emit("friend-request-result", resultCode);
+                    });
+                    return;
+                }
+                var status = result[0].status;
+
+                // update a new relationship
+                if((status == 1 && !smaller) || (status == 2 && smaller)) {
+                    SQLQuery(queryString4, [id1, id2], (result, error) => {
+                        if(!result) {
+                            resultCode |= 1;
+                            socket.emit("friend-request-result", resultCode);
+                            return;    
+                        }
+                        resultCode |= 64;
+                        socket.emit("friend-request-result", resultCode);
+                    });
+                    return;
+                }
+
+                if(status == 0) resultCode |= 16;
+                else if(status < 3) resultCode |= 32;
+                else if(status == 3) {
+                    if(smaller) resultCode |= 4;
+                    else resultCode |= 8;
+                }
+                else if(status == 4) {
+                    if(smaller) resultCode |= 8;
+                    else resultCode |= 4;
+                }
+                else if(status == 5) resultCode |= 12;
+
+                socket.emit("friend-request-result", resultCode);
+            });
+        });
+    });
+
+    socket.on("accept-friend-request", (data) => {
+        if(!usersInfo.has(socket.id)) return;
+
+        var user = usersInfo.get(socket.id);
+        var target = JSON.parse(data);
+
+        var queryString1 = "SELECT userid FROM accounts where username=?;";
+        var queryString2 = "SELECT * FROM friendship where id1=? AND id2=?;";
+        var queryString3 = "UPDATE friendship SET status=0 WHERE id1=? AND id2=?;";
+
+        SQLQuery(queryString1, [target], (result, error) => {
+            if(!result || !result[0]) return;
+
+            var id1 = Math.min(user.id, result[0].userid);
+            var id2 = Math.max(user.id, result[0].userid);
+            var smaller = id1 == user.id;
+
+            SQLQuery(queryString2, [id1, id2], (result, error) => {
+                if(!result || !result[0]) return;
+                
+                var status = result[0].status;
+                if((smaller && status == 2) || (!smaller && status == 1)) {
+                    SQLQuery(queryString3, [id1, id2], (result, error) => {
+                        if(!result) return;
+                    });
+                }
+            });
+        });
+    });
+    
+    socket.on("block-user", (data) => {
+        if(!usersInfo.has(socket.id)) return;
+
+        var user = usersInfo.get(socket.id);
+        var target = JSON.parse(data);
+        
+        var queryString1 = "SELECT userid FROM accounts where username=?;";
+        var queryString2 = "SELECT * FROM friendship where id1=? AND id2=?;";
+        var queryString3 = "INSERT INTO friendship (id1, id2, status) VALUES (?,?,?);";
+        var queryString4 = "UPDATE friendship SET status=? WHERE id1=? AND id2=?;";
+
+        SQLQuery(queryString1, [target], (result, error) => {
+            if(!result || !result[0]) return;
+
+            var id1 = Math.min(user.id, result[0].userid);
+            var id2 = Math.max(user.id, result[0].userid);
+            var smaller = id1 == user.id;
+
+            SQLQuery(queryString2, [id1, id2], (result, error) => {
+                if(!result) return;
+                
+                // check whether there is relationship between users
+                if(!result[0]) {
+                    // insert a new relationship if no
+                    SQLQuery(queryString3, [id1, id2, smaller?3:4], (result, error) => {
+                        if(!result) return;
+                    });
+                    return;
+                }
+
+                var status = result[0].status;
+                var newStatus = smaller ? 3 : 4;
+                // update a new relationship
+                if((status == 3 && !smaller) || (status == 4 && smaller)) {
+                    newStatus = 5;
+                }
+                
+                SQLQuery(queryString4, [newStatus, id1, id2], (result, error) => {
+                    if(!result) return;
+                });
+            });
+        });
+    });
+    
+    socket.on("unblock-user", (data) => {
+        if(!usersInfo.has(socket.id)) return;
+
+        var user = usersInfo.get(socket.id);
+        var target = JSON.parse(data);
+        
+        var queryString1 = "SELECT userid FROM accounts where username=?;";
+        var queryString2 = "SELECT * FROM friendship where id1=? AND id2=?;";
+        var queryString3 = "UPDATE friendship SET status=? WHERE id1=? AND id2=?;";
+        var queryString4 = "DELETE from friendship WHERE id1=? AND id2=?;";
+
+        SQLQuery(queryString1, [target], (result, error) => {
+            if(!result || !result[0]) return;
+
+            var id1 = Math.min(user.id, result[0].userid);
+            var id2 = Math.max(user.id, result[0].userid);
+            var smaller = id1 == user.id;
+
+            SQLQuery(queryString2, [id1, id2], (result, error) => {
+                if(!result || !result[0]) return;
+
+                var status = result[0].status;
+                
+                // update a new relationship
+                if(status == 5) {
+                    SQLQuery(queryString3, [smaller?4:3, id1, id2], (result, error) => {
+                        if(!result) return;
+                    });
+                }
+                else if((status == 3 && smaller) || (status == 4 && !smaller)) {
+                    SQLQuery(queryString4, [id1, id2], (result, error) => {
+                        if(!result) return;
+                    });
+                }
+            });
+        });
+    });
+    
+    socket.on("unfriend-user", (data) => {
+        if(!usersInfo.has(socket.id)) return;
+
+        var user = usersInfo.get(socket.id);
+        var target = JSON.parse(data);
+        
+        var queryString1 = "SELECT userid FROM accounts where username=?;";
+        var queryString2 = "SELECT * FROM friendship where id1=? AND id2=?;";
+        var queryString3 = "DELETE from friendship WHERE id1=? AND id2=?;";
+
+        SQLQuery(queryString1, [target], (result, error) => {
+            if(!result || !result[0]) return;
+
+            var id1 = Math.min(user.id, result[0].userid);
+            var id2 = Math.max(user.id, result[0].userid);
+
+            SQLQuery(queryString2, [id1, id2], (result, error) => {
+                if(!result || !result[0]) return;
+                if(result[0].status != 0) return;
+                SQLQuery(queryString3, [id1, id2], (result, error) => {
+                    console.log(result);
+                    if(!result) return;
+                });
+            });
+        });
+    });
+
+    socket.on("get-friends", () => {
+        if(!usersInfo.has(socket.id)) return;
+        var user = usersInfo.get(socket.id);
+        var queryString = "SELECT accounts.username, friendship.status FROM friendship INNER JOIN accounts ON (friendship.id1 = accounts.userid OR friendship.id2 = accounts.userid) AND (accounts.userid != ?) WHERE friendship.id1=? OR friendship.id2=?;";
+        SQLQuery(queryString, [user.id, user.id, user.id], (result, erorr) => {
+            if(!result) return;
+            socket.emit("load-friends", JSON.stringify(result));
+        });
+    });
+
     // Forget password page
     socket.on("reset-password", (data) => {
         var input = JSON.parse(data);
@@ -453,8 +685,10 @@ io.on("connection", (socket) => {
                     SQLQuery(queryString2, [email, user.id], (result, error) => {
                         if(!result) {
                             errorCode |= 8;
+                            socket.emit("change-email-result", errorCode);
                         }
                     });
+                    return;
                 }
             } else {
                 errorCode |= 64;

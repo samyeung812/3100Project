@@ -26,6 +26,7 @@ const battleBtn = document.getElementById("battle-button");
 const openRoomBtn = document.getElementById("open-button");
 const joinBtn = document.getElementById("join-button");
 const leaderboardBtn = document.getElementById("leaderboard-button");
+const friendBtn = document.getElementById("friend-button");
 const settingBtn = document.getElementById("setting-button");
 
 // Setting Menu
@@ -77,6 +78,16 @@ const leaderboardWrapper = document.getElementById("leaderboard-wrapper");
 const leaderboardBox = document.getElementById("leaderboard-box");
 const leaderboard = document.getElementById("leaderboard");
 const closeLeaderboardBtn = document.getElementById("close-leaderboard-button");
+
+// Friend
+const friendWrapper = document.getElementById("friend-wrapper");
+const friendBox = document.getElementById("friend-box");
+const pendingList = document.getElementById("pending-list");
+const requestList = document.getElementById("request-list");
+const friendList = document.getElementById("friend-list");
+const blockList = document.getElementById("block-list");
+const closeFriendBtn = document.getElementById("close-friend-button");
+
 
 // Game Board
 const gameBoard = document.getElementById("game-board");
@@ -199,6 +210,16 @@ function closeLeaderboard() {
     leaderboardWrapper.style.display = "none";
     leaderboard.innerHTML = "";
     leaderboardBox.reset();
+}
+
+closeFriendBtn.addEventListener("click", closeFriend);
+function closeFriend() {
+    friendWrapper.style.display = "none";
+    requestList.innerHTML = "";
+    pendingList.innerHTML = "";
+    friendList.innerHTML = "";
+    blockList.innerHTML = "";
+    friendBox.reset();
 }
 
 // Show Main Menu and Hide Game Board
@@ -432,7 +453,24 @@ function updateLeaderboard(players) {
         var div = document.createElement("div");
         div.className = "username";
         div.innerText = player.username;
-        div.innerHTML += "&nbsp;"
+        outterDiv.appendChild(div);
+        
+        div = document.createElement("div");
+        div.innerText = player.ranking;
+        outterDiv.appendChild(div);
+        
+        leaderboard.appendChild(outterDiv);
+    });
+}
+
+function updateFriend(players) {
+    friendList.innerHTML = "<div class='horizontal-container'><div>Username</div><div>Ranking</div></div>";
+    players.forEach(player => {
+        var outterDiv = document.createElement("div");
+        outterDiv.className = "record horizontal-container";
+        var div = document.createElement("div");
+        div.className = "username";
+        div.innerText = player.username;
         outterDiv.appendChild(div);
         
         div = document.createElement("div");
@@ -574,6 +612,16 @@ socket.on("leaderboard-result", (result) => {
     updateLeaderboard(players);
 });
 
+socket.on("friend-request-result", (resultCode) => {
+    console.log(resultCode);
+});
+
+socket.on("load-friends", (list) => {
+    var players = JSON.parse(list);
+    console.log(players);
+    // updateFriend(players);
+});
+
 loginBox.onsubmit = () => { 
     login(socket);
     return false;
@@ -614,6 +662,11 @@ leaderboardBox.onsubmit = () => {
     return false;
 };
 
+friendBox.onsubmit = () => {
+    addFriend(socket);
+    return false;
+};
+
 openRoomBtn.addEventListener("click", () => {
     openRoom(socket);
 });
@@ -632,6 +685,10 @@ playBtn.addEventListener("click", () => {
 
 leaderboardBtn.addEventListener("click", () => {
     showLeaderboard(socket);
+});
+
+friendBtn.addEventListener("click", () => {
+    showFriend(socket);
 });
 // })();
 
@@ -707,13 +764,28 @@ const roomChat = (socket) => {
 };
 
 const showLeaderboard = (socket) => {
+    socket.emit("get-leaderboard");
     leaderboard.innerHTML = "";
     leaderboardWrapper.style.display = "block";
-    socket.emit("get-leaderboard");
 };
 
 const searchRanking = (socket) => {
     var username = leaderboardBox.querySelector("input[name='username']").value;
-    leaderboardBox.reset();
     socket.emit("search-ranking", username);
+    leaderboardBox.reset();
+};
+
+const showFriend = (socket) => {
+    socket.emit("get-friends");
+    pendingList.innerHTML = "";
+    requestList.innerHTML = "";
+    friendList.innerHTML = "";
+    blockList.innerHTML = "";
+    friendWrapper.style.display = "block";
+};
+
+const addFriend = (socket) => {
+    var username = friendBox.querySelector("input[name='username']").value;
+    friendBox.reset();
+    socket.emit("send-friend-request", JSON.stringify(username));
 };

@@ -1,5 +1,5 @@
 // command for installing nodejs library:
-// npm install express socket.io bcrypt mysql jsonwebtoken nodemon
+// npm install express socket.io bcrypt mysql jsonwebtoken nodemon nodemailer
 
 // commad for starting the server
 // nodemon start
@@ -7,7 +7,7 @@
 
 // SQL
 // CREATE DATABASE nodeserverdb;
-// CREATE TABLE accounts (userid int NOT NULL AUTO_INCREMENT, username varchar(20) NOT NULL, email varchar(200) NOT NULL, password varchar(100) NOT NULL, PRIMARY KEY (userid, username));
+// CREATE TABLE accounts (userid int NOT NULL AUTO_INCREMENT, username varchar(20) NOT NULL, email varchar(200) NOT NULL, password varchar(100) NOT NULL, PRIMARY KEY (userid), CONSTRAINT valid_name UNIQUE (username));
 // CREATE TABLE leaderboard (userid int NOT NULL AUTO_INCREMENT, ranking bigint, FOREIGN KEY (userid) REFERENCES accounts(userid), PRIMARY KEY (userid));
 // CREATE TABLE friendship (id1 int NOT NULL, id2 int NOT NULL, status tinyint NOT NULL, FOREIGN KEY (id1) REFERENCES accounts(userid), FOREIGN KEY (id2) REFERENCES accounts(userid), PRIMARY KEY (id1, id2), CONSTRAINT valid CHECK (id1 < id2));
 // friendship status 0 for friend, 1 for id1_pending_id2, 2 for id2_pending_id1, 3 for id1_blocked_id2, 4 for id2_blocked_id1, 5 for both_blocked
@@ -117,6 +117,15 @@ function authenticateJWT (token, callback) {
     });
 }
 
+function getData(data) {
+    try {
+        return JSON.parse(data);
+    }
+    catch {
+        return "";
+    }
+}
+
 // Update user online information
 function updateUserConnection(user, socketId)
 {
@@ -145,6 +154,7 @@ function updateUserConnection(user, socketId)
     SQLQuery(queryString, [user.id], (result, error) => {
         if(!result) return;
         user.ranking = result[0].ranking;
+        io.sockets.sockets.get(socketId).emit("login", JSON.stringify(user));
         usersInfo.set(socketId, user);
     });
 }
@@ -292,7 +302,7 @@ io.on("connection", (socket) => {
         if(!usersInfo.has(socket.id)) return;
 
         var user = usersInfo.get(socket.id);
-        var target = JSON.parse(data);
+        var target = getData(data);
 
         // result code: 0 for request sent, 1 for sql connection error, 2 for invalid username, 4 for blocked user,
         //              8 for being blocked, 16 friend already, 32 for pending already, 64 for become friend
@@ -372,7 +382,7 @@ io.on("connection", (socket) => {
         if(!usersInfo.has(socket.id)) return;
 
         var user = usersInfo.get(socket.id);
-        var target = JSON.parse(data);
+        var target = getData(data);
 
         var queryString1 = "SELECT userid FROM accounts where username=?;";
         var queryString2 = "SELECT * FROM friendship where id1=? AND id2=?;";
@@ -402,7 +412,7 @@ io.on("connection", (socket) => {
         if(!usersInfo.has(socket.id)) return;
 
         var user = usersInfo.get(socket.id);
-        var target = JSON.parse(data);
+        var target = getData(data);
         
         var queryString1 = "SELECT userid FROM accounts where username=?;";
         var queryString2 = "SELECT * FROM friendship where id1=? AND id2=?;";
@@ -446,7 +456,7 @@ io.on("connection", (socket) => {
         if(!usersInfo.has(socket.id)) return;
 
         var user = usersInfo.get(socket.id);
-        var target = JSON.parse(data);
+        var target = getData(data);
         
         var queryString1 = "SELECT userid FROM accounts where username=?;";
         var queryString2 = "SELECT * FROM friendship where id1=? AND id2=?;";
@@ -484,7 +494,7 @@ io.on("connection", (socket) => {
         if(!usersInfo.has(socket.id)) return;
 
         var user = usersInfo.get(socket.id);
-        var target = JSON.parse(data);
+        var target = getData(data);
         
         var queryString1 = "SELECT userid FROM accounts where username=?;";
         var queryString2 = "SELECT * FROM friendship where id1=? AND id2=?;";
@@ -510,16 +520,23 @@ io.on("connection", (socket) => {
     socket.on("get-friends", () => {
         if(!usersInfo.has(socket.id)) return;
         var user = usersInfo.get(socket.id);
-        var queryString = "SELECT accounts.username, friendship.status FROM friendship INNER JOIN accounts ON (friendship.id1 = accounts.userid OR friendship.id2 = accounts.userid) AND (accounts.userid != ?) WHERE friendship.id1=? OR friendship.id2=?;";
+        var queryString = "SELECT accounts.userid, accounts.username, friendship.status FROM friendship INNER JOIN accounts ON (friendship.id1 = accounts.userid OR friendship.id2 = accounts.userid) AND (accounts.userid != ?) WHERE friendship.id1=? OR friendship.id2=?;";
         SQLQuery(queryString, [user.id, user.id, user.id], (result, erorr) => {
             if(!result) return;
+            result.forEach(user => {
+                if(socketIds.has(user.id)) {
+                    user.online = true;
+                } else {
+                    user.online = false;
+                }
+            });
             socket.emit("load-friends", JSON.stringify(result));
         });
     });
 
     // Forget password page
     socket.on("reset-password", (data) => {
-        var input = JSON.parse(data);
+        var input = getData(data);
         authenticateJWT(input.token , async (res) => {
             if(!res || !res.forget) return;
 
@@ -557,7 +574,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("forget-password", (data) => {
-        var input = JSON.parse(data);
+        var input = getData(data);
         var username = input.username;
 
         // find the email of the user
@@ -588,7 +605,7 @@ io.on("connection", (socket) => {
     socket.on("change-password", async (data) => {
         if(!usersInfo.has(socket.id)) return;
 
-        var input = JSON.parse(data);
+        var input = getData(data);
         var user = usersInfo.get(socket.id);
         var { password, newPassword, confirmPassword } = input;
         
@@ -646,7 +663,7 @@ io.on("connection", (socket) => {
     socket.on("change-email", async (data) => {
         if(!usersInfo.has(socket.id)) return;
 
-        var input = JSON.parse(data);
+        var input = getData(data);
         var user = usersInfo.get(socket.id);
 
         var { password, email } = input;
@@ -709,11 +726,10 @@ io.on("connection", (socket) => {
 
             // send login message to user
             var user = res.user;
-            socket.emit("login", user.name);
-            console.log(user.name, "login");
             
             // update user online information
             updateUserConnection(user, socket.id);
+            console.log(user.name, "login");
 
             // check whether user disconnected from game and reconenct it
             var roomId = room.getRoomId(user);
@@ -728,7 +744,7 @@ io.on("connection", (socket) => {
     socket.on("get-token", async (data) => {
         if (usersInfo.has(socket.id)) return;
 
-        var input = JSON.parse(data);
+        var input = getData(data);
         var { username, password } = input;
 
         // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
@@ -769,7 +785,7 @@ io.on("connection", (socket) => {
     socket.on("register", async (data) => {
         if (usersInfo.has(socket.id)) return;
 
-        var input = JSON.parse(data);
+        var input = getData(data);
         var { username, password, confirmPassword, email } = input;
         
         // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,

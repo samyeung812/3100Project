@@ -96,7 +96,7 @@ const gameBoard = document.getElementById("game-board");
 
 // Session Storage of JTW
 var sessionToken;
-var username;
+var user;
 var unreadRoomChatCnt = 0;
 
 // Show Registration Form
@@ -403,12 +403,12 @@ function updateRoomState(state) {
             span.innerHTML = ` (${spectator.ranking}) `;
             div.appendChild(span);
             spectatorsDiv.appendChild(div);
-            if(spectator.name == username) spectating = true;
+            if(spectator.id == user.id) spectating = true;
         });
         spectatorsInfo.appendChild(spectatorsDiv);
     }
     
-    if(state.players[0].name == username) {
+    if(state.players[0].id == user.id) {
         if(state.players.length == 2) startBtn.style.display = "block";
         else startBtn.style.display = "none";
         spectateBtn.style.display = "none";
@@ -416,7 +416,7 @@ function updateRoomState(state) {
     } else {
         startBtn.style.display = "none";
     }
-    if(state.players[1] && state.players[1].name == username) {
+    if(state.players[1] && state.players[1].id == user.id) {
         spectateBtn.style.display = "block";
         playBtn.style.display = "none";
     } else if(spectating) {
@@ -464,6 +464,8 @@ function updateLeaderboard(players) {
 }
 
 function updateFriend(players) {
+    console.log(players);
+    return;
     friendList.innerHTML = "<div class='horizontal-container'><div>Username</div><div>Ranking</div></div>";
     players.forEach(player => {
         var outterDiv = document.createElement("div");
@@ -564,11 +566,12 @@ socket.on("access-token", (token) => {
     socket.emit("token-login", token);
 });
 
-socket.on("login", (user) => {
+socket.on("login", (data) => {
+    var user = JSON.parse(data);
     // update home page
     showMenu();
-    username = user;
-    usernameBox.innerText = username;
+    this.user = user;
+    usernameBox.innerText = user.name;
 
     // switch page
     loginPage.style.display = "none";
@@ -618,8 +621,7 @@ socket.on("friend-request-result", (resultCode) => {
 
 socket.on("load-friends", (list) => {
     var players = JSON.parse(list);
-    console.log(players);
-    // updateFriend(players);
+    updateFriend(players);
 });
 
 loginBox.onsubmit = () => { 

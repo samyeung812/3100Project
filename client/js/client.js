@@ -424,7 +424,8 @@ function toHTMLMessage(username, msg) {
 }
 
 function updateLeaderboard(players) {
-    leaderboard.innerHTML = "";
+    leaderboard.innerHTML = "<div class='horizontal-container'><div>Username</div><div>Ranking</div></div>";
+
     players.forEach(player => {
         var outterDiv = document.createElement("div");
         outterDiv.className = "record horizontal-container";

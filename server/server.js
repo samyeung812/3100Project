@@ -255,7 +255,7 @@ io.on("connection", (socket) => {
     socket.on("get-leaderboard", () => {
         if(!usersInfo.has(socket.id)) return;
 
-        var queryString = "SELECT accounts.username, leaderboard.ranking FROM leaderboard INNER JOIN accounts ON leaderboard.userid = accounts.userid ORDER BY ranking DESC LIMIT 10;";
+        var queryString = "SELECT accounts.username, leaderboard.ranking FROM leaderboard INNER JOIN accounts ON leaderboard.userid = accounts.userid ORDER BY ranking DESC LIMIT 100;";
         SQLQuery(queryString, [], (result, erorr) => {
             if(!result) return;
             socket.emit("leaderboard-result", JSON.stringify(result));

@@ -9,6 +9,23 @@ div {
     text-align: center;
 }
 
+::-webkit-scrollbar {
+    width: 8px;
+} 
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0);
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.2); 
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5); 
+}
+
 .page {
     background-color: #FFF;
     display: none;
@@ -161,19 +178,47 @@ textarea:focus, input:focus{
     overflow: auto;
 }
 
-::-webkit-scrollbar {
+.list {
+    min-width: 40%;
+}
+
+.list span{
+    color: #bbb;
+}
+
+.option {
+    display: inline;
+    margin: 0px 5px;
+    font-weight: 900;
+	cursor: pointer;
+    user-select: none;
+}
+
+.state {
+    height: 8px;
     width: 8px;
-} 
-
-::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0);
+    position: relative;
+    left: -3px;
+    border-radius: 50%;
+    display: inline-block;
 }
 
-::-webkit-scrollbar-thumb {
-    border-radius: 5px;
-    background: rgba(255, 255, 255, 0.2); 
+.offline {
+    background-color: #aaa;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5); 
+.online {
+    background-color: #4CAF50;
+}
+
+.inRoom {
+    background-color: #ebee4f;
+}
+
+.queue {
+    background-color: #e4a24d;
+}
+
+.playing {
+    background-color: #5c5ff5;
 }

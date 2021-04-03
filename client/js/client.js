@@ -464,23 +464,179 @@ function updateLeaderboard(players) {
 }
 
 function updateFriend(players) {
-    console.log(players);
-    return;
-    friendList.innerHTML = "<div class='horizontal-container'><div>Username</div><div>Ranking</div></div>";
+    var pending = [], request = [], friend = [], block = [];
+    players.forEach(player => {
+        var smaller = user.id < player.userid;
+        if(player.status == 0) {
+            friend.push(player);
+        } else if (player.status == 1) {
+            if(smaller) {
+                pending.push(player);
+            } else {
+                request.push(player);
+            }
+        } else if(player.status == 2) {
+            if(smaller) {
+                request.push(player);
+            } else {
+                pending.push(player);
+            }
+        } else if((player.status == 3 && smaller) || (player.status == 4 && !smaller)) {
+            block.push(player);
+        } else if(player.status == 5) {
+            block.push(player);
+        }
+    });
+    updatePendingList(pending);
+    updateRequestList(request);
+    updateFriendList(friend);
+    updateBlockList(block);
+}
+
+function updatePendingList(players) {
     players.forEach(player => {
         var outterDiv = document.createElement("div");
-        outterDiv.className = "record horizontal-container";
+        outterDiv.className = "horizontal-container pending-content";
         var div = document.createElement("div");
-        div.className = "username";
-        div.innerText = player.username;
+        var span = document.createElement("span");
+        span.className = "state " + getStateName(player.state);
+        div.appendChild(span);
+        div.appendChild(document.createTextNode(player.username));
         outterDiv.appendChild(div);
-        
+
         div = document.createElement("div");
-        div.innerText = player.ranking;
+        div.className = "optionBox";
+        var btn = document.createElement("div");
+        // btn.type = "button";
+        btn.innerText = "✖";
+        btn.className = "option deny";
+        btn.onclick = () => {
+            socket.emit("cancel-friend-request", JSON.stringify(player.userid));
+        };
+        div.appendChild(btn);
+
         outterDiv.appendChild(div);
-        
-        leaderboard.appendChild(outterDiv);
+        pendingList.appendChild(outterDiv);
     });
+}
+
+function updateRequestList(players) {
+    players.forEach(player => {
+        var outterDiv = document.createElement("div");
+        outterDiv.className = "horizontal-container request-content";
+        var div = document.createElement("div");
+        var span = document.createElement("span");
+        span.className = "state " + getStateName(player.state);
+        div.appendChild(span);
+        div.appendChild(document.createTextNode(player.username));
+        outterDiv.appendChild(div);
+
+        div = document.createElement("div");
+        div.className = "optionBox";
+        
+        var btn = document.createElement("div");
+        // btn.type = "button";
+        btn.innerText = "✔";
+        btn.className = "option accept";
+        btn.onclick = () => {
+            socket.emit("accept-friend-request", JSON.stringify(player.userid));
+        };
+        div.appendChild(btn);
+        
+        btn = document.createElement("div");
+        // btn.type = "button";
+        btn.innerText = "✖";
+        btn.className = "option deny";
+        btn.onclick = () => {
+            socket.emit("deny-friend-request", JSON.stringify(player.userid));
+        };
+        div.appendChild(btn);
+        
+        outterDiv.appendChild(div);
+        requestList.appendChild(outterDiv);
+    });
+}
+
+function updateFriendList(players) {
+    players.forEach(player => {
+        var outterDiv = document.createElement("div");
+        outterDiv.className = "horizontal-container pending-content";
+
+        var div = document.createElement("div");
+        var span = document.createElement("span");
+        span.className = "state " + getStateName(player.state);
+        div.appendChild(span);
+        div.appendChild(document.createTextNode(player.username));
+        div.innerHTML += ` <span>(${player.ranking})</span>`;
+        outterDiv.appendChild(div);
+
+        div = document.createElement("div");
+        div.className = "optionBox";
+        var btn = document.createElement("div");
+        // btn.type = "button";
+        btn.innerText = "✖";
+        btn.className = "option cross";
+        btn.onclick = () => {
+            socket.emit("unfriend-user", JSON.stringify(player.userid));
+        };
+        div.appendChild(btn);
+
+        btn = document.createElement("div");
+        // btn.type = "button";
+        btn.innerText = "🛇"
+        btn.className = "option block";
+        btn.onclick = () => {
+            socket.emit("block-user", JSON.stringify(player.userid));
+        };
+        div.appendChild(btn);
+
+        outterDiv.appendChild(div);
+        friendList.appendChild(outterDiv);
+    });
+}
+
+function updateBlockList(players) {
+    players.forEach(player => {
+        var outterDiv = document.createElement("div");
+        outterDiv.className = "horizontal-container pending-content";
+        var div = document.createElement("div");
+        var span = document.createElement("span");
+        span.className = "state " + getStateName(player.state);
+        div.appendChild(span);
+        div.appendChild(document.createTextNode(player.username));
+        outterDiv.appendChild(div);
+
+        div = document.createElement("div");
+        div.className = "optionBox";
+        var btn = document.createElement("div");
+        // btn.type = "button";
+        btn.innerText = "✖";
+        btn.className = "option deny";
+        btn.onclick = () => {
+            socket.emit("unblock-user", JSON.stringify(player.userid));
+        };
+        div.appendChild(btn);
+
+        outterDiv.appendChild(div);
+        blockList.appendChild(outterDiv);
+    });
+}
+
+function getStateName(state) {
+    switch(state) {
+        case 0:
+            return "offline";
+        case 1:
+            return "online";
+        case 2:
+            return "inRoom";
+        case 3:
+            return "queue";
+        case 4:
+            return "playing";
+        default:
+            return "offline";
+    }
 }
 
 // Self Executing Function
@@ -574,7 +730,7 @@ socket.on("login", (data) => {
     usernameBox.innerText = user.name;
 
     // switch page
-    loginPage.style.display = "none";
+    document.getElementsByTagName("body")[0].removeChild(document.getElementById("login-page"));
     homePage.style.display = "block";
 });
 
@@ -617,11 +773,16 @@ socket.on("leaderboard-result", (result) => {
 
 socket.on("friend-request-result", (resultCode) => {
     console.log(resultCode);
+    socket.emit("get-friends");
 });
 
 socket.on("load-friends", (list) => {
     var players = JSON.parse(list);
     updateFriend(players);
+});
+
+socket.on("update-friends", () => {
+    socket.emit("get-friends");
 });
 
 loginBox.onsubmit = () => { 

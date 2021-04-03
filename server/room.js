@@ -1,6 +1,7 @@
 module.exports = {
     openRoom,
     getRoomId,
+    getRoomIdByUserID,
     getRoomState,
     leaveRoom,
     joinRoom,
@@ -24,6 +25,11 @@ function generateCode(len) {
 function getRoomId(user) {
     if(!rooms.has(user.id)) return null;
     return rooms.get(user.id);
+}
+
+function getRoomIdByUserID(userid) {
+    if(!rooms.has(userid)) return null;
+    return rooms.get(userid);
 }
 
 function getRoomState(roomId) {

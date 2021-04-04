@@ -156,12 +156,11 @@ textarea:focus, input:focus{
 }
 
 .message-count {
-    position: relative;
-    display: block;
-    font: bold 14px/13px Helvetica, Verdana, Tahoma;
+    display: inline;
+    position: absolute;
+    font: bold 10px Helvetica, Verdana, Tahoma;
     text-align: center;
     margin: 0;
-    top: 2px;
 }
 
 .username span {
@@ -221,4 +220,16 @@ textarea:focus, input:focus{
 
 .playing {
     background-color: #5c5ff5;
+}
+
+#private-chat-content {
+    min-width: 50%;
+}
+
+.left {
+    text-align: left;
+}
+
+.right {
+    text-align: right;
 }

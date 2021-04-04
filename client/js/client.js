@@ -88,6 +88,12 @@ const friendList = document.getElementById("friend-list");
 const blockList = document.getElementById("block-list");
 const closeFriendBtn = document.getElementById("close-friend-button");
 
+// Private Chat
+const privateChatWrapper = document.getElementById("private-chat-wrapper");
+const privateChatBox = document.getElementById("private-chat-box");
+const privateChatName = document.getElementById("private-chat-name");
+const closePrivateChatBtn = document.getElementById("close-private-chat-button");
+const privateChatContent = document.getElementById("private-chat-content");
 
 // Game Board
 const gameBoard = document.getElementById("game-board");
@@ -98,6 +104,7 @@ const gameBoard = document.getElementById("game-board");
 var sessionToken;
 var user;
 var unreadRoomChatCnt = 0;
+var friendNotificationCnt = 0;
 
 // Show Registration Form
 createBtn.addEventListener("click", showRegistration);
@@ -203,6 +210,14 @@ closeRoomChatBtn.addEventListener("click", closeRoomChat);
 function closeRoomChat() {
     roomChatWrapper.style.display = "none";
     roomChatBox.reset();
+}
+
+closePrivateChatBtn.addEventListener("click", closePrivateChat);
+function closePrivateChat() {
+    privateChatContent.innerHTML = "";
+    privateChatBox.setAttribute("targetid", "");
+    privateChatWrapper.style.display = "none";
+    privateChatBox.reset();
 }
 
 closeLeaderboardBtn.addEventListener("click", closeLeaderboard);
@@ -464,8 +479,10 @@ function updateLeaderboard(players) {
 }
 
 function updateFriend(players) {
+    friendNotificationCnt = 0;
     var pending = [], request = [], friend = [], block = [];
     players.forEach(player => {
+        friendNotificationCnt += player.unread;
         var smaller = user.id < player.userid;
         if(player.status == 0) {
             friend.push(player);
@@ -487,13 +504,16 @@ function updateFriend(players) {
             block.push(player);
         }
     });
+    friendNotificationCnt += request.length;
     updatePendingList(pending);
     updateRequestList(request);
     updateFriendList(friend);
     updateBlockList(block);
+    document.getElementById("friend-notification").innerText = friendNotificationCnt > 0 ? friendNotificationCnt : "";
 }
 
 function updatePendingList(players) {
+    pendingList.innerHTML = "";
     players.forEach(player => {
         var outterDiv = document.createElement("div");
         outterDiv.className = "horizontal-container pending-content";
@@ -521,6 +541,7 @@ function updatePendingList(players) {
 }
 
 function updateRequestList(players) {
+    requestList.innerHTML = "";
     players.forEach(player => {
         var outterDiv = document.createElement("div");
         outterDiv.className = "horizontal-container request-content";
@@ -558,6 +579,7 @@ function updateRequestList(players) {
 }
 
 function updateFriendList(players) {
+    friendList.innerHTML = "";
     players.forEach(player => {
         var outterDiv = document.createElement("div");
         outterDiv.className = "horizontal-container pending-content";
@@ -572,7 +594,26 @@ function updateFriendList(players) {
 
         div = document.createElement("div");
         div.className = "optionBox";
+        
         var btn = document.createElement("div");
+        // btn.type = "button";
+        btn.innerText = "🗨";
+        btn.className = "option chat";
+        var notificationDiv = document.createElement("div");
+        notificationDiv.className = "message-count";
+        notificationDiv.innerText = (player.unread > 0 ? player.unread : "");
+        btn.appendChild(notificationDiv);
+        btn.onclick = () => {
+            friendNotificationCnt -= parseInt(notificationDiv.innerText || 0);
+            document.getElementById("friend-notification").innerText = friendNotificationCnt > 0 ? friendNotificationCnt : "";
+            notificationDiv.innerText = "";
+            socket.emit("get-private-message", JSON.stringify(player.userid));
+            privateChatBox.setAttribute("targetid", player.userid);
+            privateChatName.innerText = player.username;
+        };
+        div.appendChild(btn);
+
+        btn = document.createElement("div");
         // btn.type = "button";
         btn.innerText = "✖";
         btn.className = "option cross";
@@ -596,6 +637,7 @@ function updateFriendList(players) {
 }
 
 function updateBlockList(players) {
+    blockList.innerHTML = "";
     players.forEach(player => {
         var outterDiv = document.createElement("div");
         outterDiv.className = "horizontal-container pending-content";
@@ -637,6 +679,18 @@ function getStateName(state) {
         default:
             return "offline";
     }
+}
+
+function updatePrivateMessage(messages) {
+    privateChatContent.innerHTML = "";
+    messages.forEach(msg => {
+        var div = document.createElement("div");
+        div.innerText = msg.content;
+        if(msg.fromid == user.id) div.className += "right";
+        else div.className = "left";
+        privateChatContent.appendChild(div);
+    });
+    privateChatWrapper.style.display = "block";
 }
 
 // Self Executing Function
@@ -730,8 +784,10 @@ socket.on("login", (data) => {
     usernameBox.innerText = user.name;
 
     // switch page
-    document.getElementsByTagName("body")[0].removeChild(document.getElementById("login-page"));
+    var loginPage = document.getElementById("login-page");
+    if(loginPage) document.getElementsByTagName("body")[0].removeChild(document.getElementById("login-page"));
     homePage.style.display = "block";
+    socket.emit("get-friends");
 });
 
 socket.on("room-state", (data) => {
@@ -785,6 +841,36 @@ socket.on("update-friends", () => {
     socket.emit("get-friends");
 });
 
+socket.on("update-private-chat", (data) => {
+    var {fromid, toid} = JSON.parse(data);
+    if(friendWrapper.style.display != "block") {
+        friendNotificationCnt++;
+        document.getElementById("friend-notification").innerText = friendNotificationCnt > 0 ? friendNotificationCnt : "";
+    } else {
+        var targetId = parseInt(privateChatBox.getAttribute("targetid"));
+        if(toid == targetId || fromid == targetId) {
+            socket.emit("get-private-message", JSON.stringify(targetId));
+        } else {
+            socket.emit("get-friends");
+        }
+    }
+});
+
+socket.on("load-private-message", (data) => {
+    var messages = JSON.parse(data);
+
+    // check whether the client is at the bottom of the chat box
+    var originalScroll = privateChatContent.scrollTop;
+    var atBottom = privateChatContent.scrollTop == privateChatContent.scrollHeight - privateChatContent.clientHeight;
+
+    // render the private chat box
+    updatePrivateMessage(messages);
+    
+    // scroll to bottom after adding new message
+    if(atBottom) privateChatContent.scrollTop = privateChatContent.scrollHeight - privateChatContent.clientHeight;
+    else privateChatContent.scrollTop = originalScroll;
+});
+
 loginBox.onsubmit = () => { 
     login(socket);
     return false;
@@ -829,6 +915,11 @@ friendBox.onsubmit = () => {
     addFriend(socket);
     return false;
 };
+
+privateChatBox.onsubmit = () => {
+    sendPrivateMessage(socket);
+    return false;
+}
 
 openRoomBtn.addEventListener("click", () => {
     openRoom(socket);
@@ -951,4 +1042,11 @@ const addFriend = (socket) => {
     var username = friendBox.querySelector("input[name='username']").value;
     friendBox.reset();
     socket.emit("send-friend-request", JSON.stringify(username));
+};
+
+const sendPrivateMessage = (socket) => {
+    var content = privateChatBox.querySelector("input[name='message']").value;
+    var targetId = parseInt(privateChatBox.getAttribute("targetid"));
+    privateChatBox.reset();
+    socket.emit("send-private-message", JSON.stringify({targetId: targetId, content: content}));
 };

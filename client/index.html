@@ -80,7 +80,10 @@
             <button id="open-button">Open Room</button>
             <button id="leaderboard-button">Leader Board</button>
             <button id="ranking-button">Ranking</button>
-            <button id="friend-button">Friend</button>
+            <div>
+                <button id="friend-button">Friend</button>
+                <div id="friend-notification" class="message-count"></div>
+            </div>
             <button id="setting-button">Setting</button>
         </div>
     </div>
@@ -154,8 +157,10 @@
                 <button id="spectate-button">Spectate</button>
                 <button id="play-button">Play</button>
                 <button id="leave-button">Leave</button>
-                <button id="room-chat-button">Chat</button>
-                <div id="unread-room-chat" class="message-count"></div>
+                <div>
+                    <button id="room-chat-button">Chat</button>
+                    <div id="unread-room-chat" class="message-count"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -210,6 +215,18 @@
                 <div id="block-list" class="vertical-container list"></div>
             </div>
             <button id="close-friend-button" type="button">Close</button>
+        </form>
+    </div>
+
+    <div id="private-chat-wrapper" class="wrapper popup">
+        <form id="private-chat-box" class="box" targetid="">
+            <div id="private-chat-name"></div>
+            <div id="private-chat-content" class="vertical-container scrollable"></div>
+            <input type="text" name="message" placeholder="Message">
+            <div class="horizontal-container">
+                <button id="close-private-chat-button" type="button">Close</button>
+                <input class="submit" type="submit" value="Send">
+            </div>
         </form>
     </div>
 

@@ -12,6 +12,7 @@
 // CREATE TABLE friendship (id1 int NOT NULL, id2 int NOT NULL, status tinyint NOT NULL, FOREIGN KEY (id1) REFERENCES accounts(userid), FOREIGN KEY (id2) REFERENCES accounts(userid), PRIMARY KEY (id1, id2), CONSTRAINT valid CHECK (id1 < id2));
 // friendship status 0 for friend, 1 for id1 pending id2, 2 for id2 pending id1, 3 for id1 blocked id2, 4 for id2 blocked id1, 5 for both blocked
 // CREATE TABLE messages (fromid int NOT NULL, toid int NOT NULL, content varchar(255), createdate timestamp DEFAULT NOW(), unread boolean DEFAULT 1, FOREIGN KEY (fromid) REFERENCES accounts(userid), FOREIGN KEY (toid) REFERENCES accounts(userid));
+// CREATE TABLE battlelog (userid int NOT NULL, opponentid int NOT NULL, ranked boolean NOT NULL, win boolean NOT NULL, rankchange smallint NOT NULL, battledate timestamp DEFAULT NOW(), FOREIGN KEY (userid) REFERENCES accounts(userid), FOREIGN KEY (opponentid) REFERENCES accounts(userid));
 
 const express = require("express");
 const app = express();
@@ -183,6 +184,11 @@ function SQLQuery(queryString, args, callback)
     }
 }
 
+function updateBattlelog(user) {
+    var queryString1 = "INSERT INTO battlelog (userid, opponentid, ranked, win, rankchange) VALUES (?,?,?,?,?,?);";
+    var queryString2 = "INSERT INTO battlelog (userid, opponentid, ranked, win, rankchange) VALUES (?,?,?,?,?,?);";
+}
+
 // Server socket setting
 io.on("connection", (socket) => {
 
@@ -266,7 +272,7 @@ io.on("connection", (socket) => {
     socket.on("get-leaderboard", () => {
         if(!usersInfo.has(socket.id)) return;
 
-        var queryString = "SELECT accounts.username, leaderboard.ranking FROM leaderboard INNER JOIN accounts ON leaderboard.userid = accounts.userid ORDER BY ranking DESC LIMIT 100;";
+        var queryString = "SELECT a.username, l.ranking FROM `leaderboard` l INNER JOIN `accounts` a ON l.userid = a.userid ORDER BY l.ranking DESC LIMIT 100;";
         SQLQuery(queryString, [], (result, erorr) => {
             if(!result) return;
             socket.emit("leaderboard-result", JSON.stringify(result));
@@ -277,10 +283,31 @@ io.on("connection", (socket) => {
         if(typeof username != "string") return;
         if(!usersInfo.has(socket.id)) return;
 
-        var queryString = "SELECT accounts.username, leaderboard.ranking FROM leaderboard INNER JOIN accounts ON leaderboard.userid = accounts.userid WHERE accounts.username=?;";
+        var queryString = "SELECT a.username, l.ranking FROM `leaderboard` l INNER JOIN `accounts` a ON l.userid = a.userid WHERE a.username=?;";
         SQLQuery(queryString, [username], (result, error) => {
             if(!result) return;
             socket.emit("leaderboard-result", JSON.stringify(result));
+        });
+    });
+
+    socket.on("get-battlelog", () => {
+        if(!usersInfo.has(socket.id)) return;
+        var user = usersInfo.get(socket.id);
+
+        var queryString = "SELECT a1.username as you, a2.username as opponent, b.ranked, b.win, b.rankchange from `battlelog` b INNER JOIN `accounts` a1 ON a1.userid=? INNER JOIN `accounts` a2 ON a2.userid = b.opponentid WHERE b.userid=? ORDER BY b.battledate DESC;";
+        SQLQuery(queryString, [user.id, user.id], (result, error) => {
+            if(!result) return;
+            socket.emit("battlelog-result", JSON.stringify(result));
+        });
+    });
+
+    socket.on("search-battlelog", (username) => {
+        if(typeof username != "string") return;
+        if(!usersInfo.has(socket.id)) return;
+        var queryString = "SELECT a1.username as you, a2.username as opponent, b.ranked, b.win, b.rankchange from `battlelog` b INNER JOIN `accounts` a1 ON a1.userid=b.userid INNER JOIN `accounts` a2 ON a2.userid = b.opponentid WHERE a1.username=? ORDER BY b.battledate DESC;";
+        SQLQuery(queryString, [username], (result, error) => {
+            if(!result) return;
+            socket.emit("battlelog-result", JSON.stringify(result));
         });
     });
 
@@ -649,7 +676,7 @@ io.on("connection", (socket) => {
         if(!usersInfo.has(socket.id)) return;
         var user = usersInfo.get(socket.id);
 
-        var queryString = "SELECT accounts.userid, accounts.username, friendship.status, leaderboard.ranking, (SELECT COUNT(*) FROM messages WHERE messages.fromid=accounts.userid AND messages.toid=? AND messages.unread=1) AS unread FROM friendship INNER JOIN accounts ON (friendship.id1 = accounts.userid OR friendship.id2 = accounts.userid) AND (accounts.userid != ?) INNER JOIN leaderboard ON (accounts.userid = leaderboard.userid) WHERE friendship.id1=? OR friendship.id2=?;";
+        var queryString = "SELECT a.userid, a.username, f.status, l.ranking, (SELECT COUNT(*) FROM `messages` m WHERE m.fromid=a.userid AND m.toid=? AND m.unread=1) AS unread FROM `friendship` f INNER JOIN `accounts` a ON (f.id1 = a.userid OR f.id2 = a.userid) AND (a.userid != ?) INNER JOIN `leaderboard` l ON (a.userid = l.userid) WHERE f.id1=? OR f.id2=?;";
         SQLQuery(queryString, [user.id, user.id, user.id, user.id], (result, erorr) => {
             if(!result) return;
             result.forEach(user => {

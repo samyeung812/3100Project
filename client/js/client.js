@@ -22,10 +22,11 @@ const homePage = document.getElementById("home-page");
 
 // Main Menu
 const menuWrapper = document.getElementById("menu-wrapper");
-const battleBtn = document.getElementById("battle-button");
+const rankingBtn = document.getElementById("ranking-button");
 const openRoomBtn = document.getElementById("open-button");
 const joinBtn = document.getElementById("join-button");
 const leaderboardBtn = document.getElementById("leaderboard-button");
+const battlelogBtn = document.getElementById("battlelog-button");
 const friendBtn = document.getElementById("friend-button");
 const settingBtn = document.getElementById("setting-button");
 
@@ -78,6 +79,12 @@ const leaderboardWrapper = document.getElementById("leaderboard-wrapper");
 const leaderboardBox = document.getElementById("leaderboard-box");
 const leaderboard = document.getElementById("leaderboard");
 const closeLeaderboardBtn = document.getElementById("close-leaderboard-button");
+
+// Battlelog
+const battlelogWrapper = document.getElementById("battlelog-wrapper");
+const battlelogBox = document.getElementById("battlelog-box");
+const battlelog = document.getElementById("battlelog");
+const closeBattlelogBtn = document.getElementById("close-battlelog-button");
 
 // Friend
 const friendWrapper = document.getElementById("friend-wrapper");
@@ -190,6 +197,7 @@ function closeChangeEmail() {
 
 joinBtn.addEventListener("click", showJoinRoomWrapper);
 function showJoinRoomWrapper() {
+    document.getElementById("join-error").innerText = "";
     joinWrapper.style.display = "block";
 }
 
@@ -225,6 +233,13 @@ function closeLeaderboard() {
     leaderboardWrapper.style.display = "none";
     leaderboard.innerHTML = "";
     leaderboardBox.reset();
+}
+
+closeBattlelogBtn.addEventListener("click", closeBattlelog);
+function closeBattlelog() {
+    battlelogWrapper.style.display = "none";
+    battlelog.innerHTML = "";
+    battlelogBox.reset();
 }
 
 closeFriendBtn.addEventListener("click", closeFriend);
@@ -464,7 +479,7 @@ function updateLeaderboard(players) {
 
     players.forEach(player => {
         var outterDiv = document.createElement("div");
-        outterDiv.className = "record horizontal-container";
+        outterDiv.className = "horizontal-container";
         var div = document.createElement("div");
         div.className = "username";
         div.innerText = player.username;
@@ -475,6 +490,36 @@ function updateLeaderboard(players) {
         outterDiv.appendChild(div);
         
         leaderboard.appendChild(outterDiv);
+    });
+}
+
+function updateBattlelog(results) {
+    battlelog.innerHTML = "<div class='grid-container'><div>You</div><div>Opponent</div><div>Ranked</div><div>Result</div><div>Rank Changed</div></div>";
+    results.forEach(result => {
+        var outterDiv = document.createElement("div");
+        outterDiv.className = "grid-container";
+        var div = document.createElement("div");
+        div.className = "username";
+        div.innerText = result.you;
+        outterDiv.appendChild(div);
+
+        div = document.createElement("div");
+        div.innerText = result.opponent;
+        outterDiv.appendChild(div);
+        
+        div = document.createElement("div");
+        div.innerText = result.ranked > 0 ? "✔" : "✖";
+        outterDiv.appendChild(div);
+        
+        div = document.createElement("div");
+        div.innerText = result.win > 0 ? "👑" : "💀";
+        outterDiv.appendChild(div);
+        
+        div = document.createElement("div");
+        div.innerText = result.ranked > 0 ? (result.rankchange) : "---";
+        outterDiv.appendChild(div);
+        
+        battlelog.appendChild(outterDiv);
     });
 }
 
@@ -514,6 +559,11 @@ function updateFriend(players) {
 
 function updatePendingList(players) {
     pendingList.innerHTML = "";
+    if(players.length > 0) {
+        var span = document.createElement("span");
+        span.innerText = "Pending List";
+        pendingList.appendChild(span);
+    }
     players.forEach(player => {
         var outterDiv = document.createElement("div");
         outterDiv.className = "horizontal-container pending-content";
@@ -542,6 +592,11 @@ function updatePendingList(players) {
 
 function updateRequestList(players) {
     requestList.innerHTML = "";
+    if(players.length > 0) {
+        var span = document.createElement("span");
+        span.innerText = "Request List";
+        requestList.appendChild(span);
+    }
     players.forEach(player => {
         var outterDiv = document.createElement("div");
         outterDiv.className = "horizontal-container request-content";
@@ -580,6 +635,11 @@ function updateRequestList(players) {
 
 function updateFriendList(players) {
     friendList.innerHTML = "";
+    if(players.length > 0) {
+        var span = document.createElement("span");
+        span.innerText = "Friend List";
+        friendList.appendChild(span);
+    }
     players.forEach(player => {
         var outterDiv = document.createElement("div");
         outterDiv.className = "horizontal-container pending-content";
@@ -638,6 +698,11 @@ function updateFriendList(players) {
 
 function updateBlockList(players) {
     blockList.innerHTML = "";
+    if(players.length > 0) {
+        var span = document.createElement("span");
+        span.innerText = "Block List";
+        blockList.appendChild(span);
+    }
     players.forEach(player => {
         var outterDiv = document.createElement("div");
         outterDiv.className = "horizontal-container pending-content";
@@ -827,6 +892,11 @@ socket.on("leaderboard-result", (result) => {
     updateLeaderboard(players);
 });
 
+socket.on("battlelog-result", (result) => {
+    var battlelogResult = JSON.parse(result);
+    updateBattlelog(battlelogResult);
+});
+
 socket.on("friend-request-result", (resultCode) => {
     console.log(resultCode);
     socket.emit("get-friends");
@@ -911,6 +981,11 @@ leaderboardBox.onsubmit = () => {
     return false;
 };
 
+battlelogBox.onsubmit = () => {
+    searchBattlelog(socket);
+    return false;
+};
+
 friendBox.onsubmit = () => {
     addFriend(socket);
     return false;
@@ -939,6 +1014,10 @@ playBtn.addEventListener("click", () => {
 
 leaderboardBtn.addEventListener("click", () => {
     showLeaderboard(socket);
+});
+
+battlelogBtn.addEventListener("click", () => {
+    showBattlelog(socket);
 });
 
 friendBtn.addEventListener("click", () => {
@@ -1023,10 +1102,22 @@ const showLeaderboard = (socket) => {
     leaderboardWrapper.style.display = "block";
 };
 
+const showBattlelog = (socket) => {
+    socket.emit("get-battlelog");
+    battlelog.innerHTML = "";
+    battlelogWrapper.style.display = "block";
+};
+
 const searchRanking = (socket) => {
     var username = leaderboardBox.querySelector("input[name='username']").value;
     socket.emit("search-ranking", username);
     leaderboardBox.reset();
+};
+
+const searchBattlelog = (socket) => {
+    var username = battlelogBox.querySelector("input[name='username']").value;
+    socket.emit("search-battlelog", username);
+    battlelogBox.reset();
 };
 
 const showFriend = (socket) => {

@@ -74,16 +74,15 @@
 <div id ="home-page" class="page">
     <div id="menu-wrapper" class="wrapper popup">
         <div id="menu-box" class="box">
-            <button id="battle-button">Battle Mode</button>
-            <button id="time-button">Time Mode</button>
+            <button id="ranking-button">Ranking Mode</button>
             <button id="join-button">Join Battle</button>
             <button id="open-button">Open Room</button>
             <button id="leaderboard-button">Leader Board</button>
-            <button id="ranking-button">Ranking</button>
             <div>
                 <button id="friend-button">Friend</button>
                 <div id="friend-notification" class="message-count"></div>
             </div>
+            <button id="battlelog-button">Battlelog</button>
             <button id="setting-button">Setting</button>
         </div>
     </div>
@@ -198,20 +197,27 @@
         </form>
     </div>
 
+    <div id="battlelog-wrapper" class="wrapper popup">
+        <form id="battlelog-box" class="box">
+            <div class="horizontal-container">
+                <input type="text" name="username" placeholder="search player">
+                <input class="submit" type="submit" value="Search">
+            </div>
+            <div id="battlelog" class="vertical-container scrollable"></div>
+            <button id="close-battlelog-button" type="button">Close</button>
+        </form>
+    </div>
+
     <div id="friend-wrapper" class="wrapper popup">
         <form id="friend-box" class="box">
             <div class="horizontal-container">
                 <input type="text" name="username" placeholder="add new friend">
-                <input class="submit" type="submit" value="Send Request">
+                <input class="submit" type="submit" value="Request">
             </div>
             <div class="vertical-container scrollable list">
-                <span>Pending List</span>
                 <div id="pending-list" class="vertical-container list"></div>
-                <span>Request List</span>
                 <div id="request-list" class="vertical-container list"></div>
-                <span>Freind List</span>
                 <div id="friend-list" class="vertical-container list"></div>
-                <span>Block List</span>
                 <div id="block-list" class="vertical-container list"></div>
             </div>
             <button id="close-friend-button" type="button">Close</button>

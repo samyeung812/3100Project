@@ -11,6 +11,7 @@ div {
 
 ::-webkit-scrollbar {
     width: 8px;
+    height: 0px;
 } 
 
 ::-webkit-scrollbar-track {
@@ -104,6 +105,12 @@ textarea:focus, input:focus{
     flex-direction: row;
     justify-content: space-between;
     align-items: flex-start;
+    overflow: auto;
+}
+
+.horizontal-container div{
+    margin: 0px 8px;
+    white-space: nowrap;
 }
 
 .vertical-container {
@@ -142,9 +149,7 @@ textarea:focus, input:focus{
 
 .username {
     display: block;
-    flex: 0 0 auto;
     color: yellow;
-    word-wrap: break-word;
 }
 
 .msg {
@@ -156,11 +161,14 @@ textarea:focus, input:focus{
 }
 
 .message-count {
+    color: #fff;
     display: inline;
     position: absolute;
-    font: bold 10px Helvetica, Verdana, Tahoma;
+    font-weight: 900;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 10px;
     text-align: center;
-    margin: 0;
+    border-radius: 50%;
 }
 
 .username span {
@@ -173,6 +181,7 @@ textarea:focus, input:focus{
 
 .scrollable {
     max-height: 250px;
+    max-width: 90%;
     padding: 5px;
     overflow: auto;
 }
@@ -232,4 +241,29 @@ textarea:focus, input:focus{
 
 .right {
     text-align: right;
+}
+
+#battlelog {
+    width: 80%;
+    white-space: nowrap;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: minmax(200px, 35fr) minmax(200px, 35fr) minmax(75px, 9fr) minmax(75px, 9fr) minmax(100px, 12fr);
+}
+
+.grid-container div{
+    overflow: auto;
+    padding: 2px;
+    border-left: 1px solid rgba(255, 255, 255, 0.6);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.grid-container > div:first-child {
+    border-left: none;
+}
+
+#battlelog > div.grid-container:last-child > div{
+    border-bottom: none;
 }

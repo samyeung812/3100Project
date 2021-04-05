@@ -187,7 +187,7 @@ textarea:focus, input:focus{
 }
 
 .list {
-    min-width: 40%;
+    min-width: 50%;
 }
 
 .list span{
@@ -196,7 +196,15 @@ textarea:focus, input:focus{
 
 .option {
     display: inline;
-    margin: 0px 5px;
+    margin: 0px 5px !important;
+    font-weight: 900;
+	cursor: pointer;
+    user-select: none;
+}
+
+.option div {
+    display: inline;
+    margin: 0px;
     font-weight: 900;
 	cursor: pointer;
     user-select: none;

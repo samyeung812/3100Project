@@ -199,7 +199,7 @@ io.on("connection", (socket) => {
 
         // wait user to reconnect for 1 minutes
         var minutes = 1;
-        if (room.getRoomId(usersInfo.get(socket.id).id)) setTimeout(disconnectUser, minutes * 60 * 1000, usersInfo.get(socket.id));
+        if (room.getRoomId(usersInfo.get(socket.id))) setTimeout(disconnectUser, minutes * 60 * 1000, usersInfo.get(socket.id));
 
         // remove user online information
         console.log(usersInfo.get(socket.id).name, "logout");

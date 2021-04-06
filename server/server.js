@@ -133,7 +133,7 @@ function updateUserConnection(user, socketId, callback)
     if (socketIds.has(user.id) && socketIds.get(user.id) != socketId) {
         // try to inform the user and disconnect
         var target = socketIds.get(user.id);
-        io.to(target).emit("error", "Login Somewhere Else");
+        io.to(target).emit("popup-message", JSON.stringify({title: "Warning", messages: ["You Account is Logged in Somewhere Else!"]}));
         io.sockets.sockets.get(target).disconnect();
         usersInfo.delete(target);
     }
@@ -142,7 +142,7 @@ function updateUserConnection(user, socketId, callback)
     if (usersInfo.has(socketId) && usersInfo.get(socketId).id != user.id) {
         // try to inform the user and disconnect
         var target = socketIds.get(usersInfo.get(socketId).id);
-        io.to(target).emit("error", "Login Somewhere Else");
+        io.to(target).emit("popup-message", JSON.stringify({title: "Warning", messages: ["You Account is Logged in Somewhere Else!"]}));
         io.sockets.sockets.get(target).disconnect();
         socketIds.delete(user.id);
     }
@@ -269,6 +269,24 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
     });
 
+    socket.on("spectate-friend", (targetId) => {
+        if(!usersInfo.has(socket.id)) return;
+        if(!room.getRoomIdByUserID(targetId)) {
+            socket.emit("popup-message", JSON.stringify({title: "Spectate Result", messages: ["Room is dismissed."]}));
+            return;
+        }
+
+        var user = usersInfo.get(socket.id);
+        var roomId = room.getRoomIdByUserID(targetId);
+
+        if(!room.spectateFriend(roomId, user)) {
+            socket.emit("popup-message", JSON.stringify({title: "Spectate Result", messages: ["You are not allowed to spectate."]}));
+            return;
+        }
+        socket.join(roomId);
+        io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
+    });
+
     socket.on("get-leaderboard", () => {
         if(!usersInfo.has(socket.id)) return;
 
@@ -355,6 +373,11 @@ io.on("connection", (socket) => {
             var id1 = Math.min(user.id, targetId);
             var id2 = Math.max(user.id, targetId);
             var smaller = id1 == user.id;
+
+            if(id1 == id2) {
+                socket.emit("friend-request-result", 2);
+                return;
+            }
 
             SQLQuery(queryString2, [id1, id2], (result, error) => {
                 if(!result) {

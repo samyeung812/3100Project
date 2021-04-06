@@ -6,6 +6,7 @@ module.exports = {
     leaveRoom,
     joinRoom,
     spectate,
+    spectateFriend,
     play
 }
 
@@ -96,6 +97,14 @@ function spectate(user) {
     if(user.id != state.players[1].id) return false;
     state.players = state.players.splice(0, 1);
     state.spectators.push(user);
+    return true;
+}
+
+function spectateFriend(roomId, user) {
+    var state = getRoomState(roomId);
+    if(getRoomId(user)) return false;
+    state.spectators.push(user);
+    rooms.set(user.id, roomId);
     return true;
 }
 

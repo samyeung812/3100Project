@@ -105,12 +105,10 @@ textarea:focus, input:focus{
     flex-direction: row;
     justify-content: space-between;
     align-items: flex-start;
-    overflow: auto;
 }
 
 .horizontal-container div{
     margin: 0px 8px;
-    white-space: nowrap;
 }
 
 .vertical-container {
@@ -157,6 +155,7 @@ textarea:focus, input:focus{
     flex: 1 0 auto;
     width:100px;
     word-wrap: break-word;
+    white-space: initial;
     text-align: left;
 }
 
@@ -176,7 +175,11 @@ textarea:focus, input:focus{
 }
 
 #leaderboard {
-    min-width: 50%;
+    min-width: 60%;
+}
+
+#leaderboard div{
+    grid-template-columns: minmax(200px, 75fr) minmax(100px, 25fr);
 }
 
 .scrollable {
@@ -256,9 +259,12 @@ textarea:focus, input:focus{
     white-space: nowrap;
 }
 
+#battlelog div{
+    grid-template-columns: minmax(200px, 35fr) minmax(200px, 35fr) minmax(75px, 9fr) minmax(75px, 9fr) minmax(100px, 12fr);
+}
+
 .grid-container {
     display: grid;
-    grid-template-columns: minmax(200px, 35fr) minmax(200px, 35fr) minmax(75px, 9fr) minmax(75px, 9fr) minmax(100px, 12fr);
 }
 
 .grid-container div{
@@ -272,6 +278,12 @@ textarea:focus, input:focus{
     border-left: none;
 }
 
-#battlelog > div.grid-container:last-child > div{
+div > div.grid-container:last-child > div{
     border-bottom: none;
+}
+
+.title {
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: 800;
 }

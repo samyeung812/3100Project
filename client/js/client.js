@@ -475,11 +475,11 @@ function toHTMLMessage(username, msg) {
 }
 
 function updateLeaderboard(players) {
-    leaderboard.innerHTML = "<div class='horizontal-container'><div>Username</div><div>Ranking</div></div>";
+    leaderboard.innerHTML = "<div class='grid-container'><div>Username</div><div>Ranking</div></div>";
 
     players.forEach(player => {
         var outterDiv = document.createElement("div");
-        outterDiv.className = "horizontal-container";
+        outterDiv.className = "grid-container";
         var div = document.createElement("div");
         div.className = "username";
         div.innerText = player.username;
@@ -656,6 +656,15 @@ function updateFriendList(players) {
         div.className = "optionBox";
         
         var btn = document.createElement("div");
+        if(player.state == 2 || player.state == 4) {
+            btn.innerText = "👁";
+            btn.className = "option chat";
+            btn.onclick = () => {
+                socket.emit("spectate-friend", player.userid);
+            };
+            div.append(btn);
+            btn = document.createElement("div");
+        }
         // btn.type = "button";
         btn.innerText = "🗨";
         btn.className = "option chat";
@@ -758,6 +767,38 @@ function updatePrivateMessage(messages) {
     privateChatWrapper.style.display = "block";
 }
 
+function showPopUpMessageBox(title, messages) {
+    var wrapper = document.createElement("div");
+    wrapper.className = "wrapper popup";
+    wrapper.onclick = (e) => {
+        if(e.target == wrapper) {
+            wrapper.remove();
+        }
+    };
+    var box = document.createElement("div");
+    box.className = "box";
+    var titleBox = document.createElement("div");
+    titleBox.className = "title";
+    titleBox.innerText = title;
+    box.appendChild(titleBox);
+    var msgBox = document.createElement("div");
+    messages.forEach(message => {
+        var div = document.createElement("div");
+        div.innerText = message;
+        msgBox.appendChild(div);
+    });
+    box.appendChild(msgBox);
+    var btn = document.createElement("button");
+    btn.innerText = "Close";
+    btn.onclick = () => {
+        wrapper.remove();
+    };
+    box.appendChild(btn);
+    wrapper.appendChild(box);
+    wrapper.style.display = "block";
+    homePage.appendChild(wrapper);
+}
+
 // Self Executing Function
 // (() => {
 const socket = io();
@@ -779,11 +820,12 @@ socket.on("connect", () => {
 });
 
 socket.on("disconnect", () => {
-    console.log("disconnected from server");
+    showPopUpMessageBox("Error Message", ["Disconnected From Server!","Please Reload the Page!"]);
 });
 
-socket.on("error", (msg) => {
-    console.log("error", msg);
+socket.on("popup-message", (data) => {
+    var {title, messages} = JSON.parse(data);
+    showPopUpMessageBox(title, messages);
 });
 
 socket.on("auth-error", (msg) => {
@@ -898,7 +940,34 @@ socket.on("battlelog-result", (result) => {
 });
 
 socket.on("friend-request-result", (resultCode) => {
-    console.log(resultCode);
+    // result code: 0 for request sent, 1 for sql connection error, 2 for invalid username, 4 for blocked user,
+    //              8 for being blocked, 16 friend already, 32 for pending already, 64 for become friend
+    var content = [];
+    if(resultCode == 0) {
+        content.push("Request sent!");
+    }
+    if(resultCode & 1) {
+        content.push("Connection error!");
+    }
+    if(resultCode & 2) {
+        content.push("Invalid username!");
+    }
+    if(resultCode & 4) {
+        content.push("The user is blocked!");
+    }
+    if(resultCode & 8) {
+        content.push("You are blocked by the user!");
+    }
+    if(resultCode & 16) {
+        content.push("The user is your friend already!");
+    }
+    if(resultCode & 32) {
+        content.push("You are pending already!");
+    }
+    if(resultCode & 64) {
+        content.push("You guys are friend now!");
+    }
+    showPopUpMessageBox("Friend Request Result", content);
     socket.emit("get-friends");
 });
 

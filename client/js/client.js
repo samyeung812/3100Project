@@ -4,17 +4,25 @@ const loginPage = document.getElementById("login-page");
 // Login Form
 const loginWrapper = document.getElementById("login-wrapper");
 const loginBox = document.getElementById("login-box");
+const loginUsernameError = document.getElementById("login-username-error");
+const loginPasswordError = document.getElementById("login-password-error")
 const createBtn = document.getElementById("create-button");
 const forgetBtn = document.getElementById("forget-button");
 
 // Registration Form
 const registrationWrapper = document.getElementById("registration-wrapper");
 const registrationBox = document.getElementById("registration-box");
+const registerUsernameError = document.getElementById("register-username-error");
+const registerPasswordError = document.getElementById("register-password-error");
+const registerEmailError = document.getElementById("register-email-error");
+const registerConfirmPasswordError = document.getElementById("register-confirm-password-error");
+
 const closeCreateBtn = document.getElementById("close-create-button");
 
 // Forget Form
 const forgetWrapper = document.getElementById("forget-wrapper");
 const forgetBox = document.getElementById("forget-box");
+const forgetUsernameError = document.getElementById("forget-username-error");
 const closeForgetBtn = document.getElementById("close-forget-button");
 
 // =================  Components in Home Page  ================= //
@@ -28,6 +36,7 @@ const joinBtn = document.getElementById("join-button");
 const leaderboardBtn = document.getElementById("leaderboard-button");
 const battlelogBtn = document.getElementById("battlelog-button");
 const friendBtn = document.getElementById("friend-button");
+const friendNotification = document.getElementById("friend-notification");
 const settingBtn = document.getElementById("setting-button");
 
 // Setting Menu
@@ -41,11 +50,16 @@ const closeSettingBox = document.getElementById("close-setting-button");
 // Change Password Form
 const changePasswordWrapper = document.getElementById("change-password-wrapper");
 const changePasswordBox = document.getElementById("change-password-box");
+const changeNewPasswordError = document.getElementById("change-new-password-error");
+const changePasswordError = document.getElementById("change-password-error");
+const changeConfirmPasswordError = document.getElementById("change-confirm-password-error")
 const closeChangePasswordBtn = document.getElementById("close-change-password-button");
 
 // Change Email Form
 const changeEmailWrapper = document.getElementById("change-email-wrapper");
 const changeEmailBox = document.getElementById("change-email-box");
+const changeEmailError = document.getElementById("change-email-error");
+const changeEmailPasswordError = document.getElementById("change-email-password-error");
 const closeChangeEmailBtn = document.getElementById("close-change-email-button");
 
 // Room
@@ -66,6 +80,7 @@ const unreadRoomChat = document.getElementById("unread-room-chat");
 const joinWrapper = document.getElementById("join-wrapper");
 const joinBox = document.getElementById("join-box");
 const joinRoomBtn = document.getElementById("join-room-button");
+const joinError = document.getElementById("join-error");
 const closejoinBtn = document.getElementById("close-join-button");
 
 // Room Chat Form
@@ -197,7 +212,7 @@ function closeChangeEmail() {
 
 joinBtn.addEventListener("click", showJoinRoomWrapper);
 function showJoinRoomWrapper() {
-    document.getElementById("join-error").innerText = "";
+    joinError.innerText = "";
     joinWrapper.style.display = "block";
 }
 
@@ -272,113 +287,109 @@ function getCookie (name) {
 }
 
 function updateLoginError(errorCode) {
-    // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
-    //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
-    //             64 for incorrect password, 128 for non-existing username, 256 for unmatch confirm password
-    if(errorCode & 128) {
-        document.getElementById("login-username-error").innerText = "Username does not exist!";
+        // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
+        //             8 for sql connection error, 16 for duplicated username, 32 for incorrect password,
+        //             64 for non-existing username, 128 for unmatch confirm password
+    if(errorCode & 64) {
+        loginUsernameError.innerText = "Username does not exist!";
     } else {
-        document.getElementById("login-username-error").innerText = "";
+        loginUsernameError.innerText = "";
     }
     
-    if(errorCode & 64) {
-        document.getElementById("login-password-error").innerText = "Incorrect password!";
+    if(errorCode & 32) {
+        loginPasswordError.innerText = "Incorrect password!";
     } else {
-        document.getElementById("login-password-error").innerText = "";
+        loginPasswordError.innerText = "";
     }
 }
 
 function updateRegistrationError(errorCode) {
     // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
-    //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
-    //             64 for incorrect password, 128 for non-existing username, 256 for unmatch confirm password
+    //             8 for sql connection error, 16 for duplicated username, 32 for incorrect password,
+    //             64 for non-existing username, 128 for unmatch confirm password
     if (errorCode & 1 || errorCode & 16) {
         if(errorCode & 1) {
-            document.getElementById("register-username-error").innerText = "Invalid username format!";
+            registerUsernameError.innerText = "Invalid username format!";
         } else {
-            document.getElementById("register-username-error").innerText = "The username has already registered!";
+            registerUsernameError.innerText = "The username has already registered!";
         }
     } else {
-        document.getElementById("register-username-error").innerText = "";
+        registerUsernameError.innerText = "";
     }
     
     if (errorCode & 2) {
-        document.getElementById("register-password-error").innerText = "Invalid password format!";
+        registerPasswordError.innerText = "Invalid password format!";
     } else {
-        document.getElementById("register-password-error").innerText = "";
+        registerPasswordError.innerText = "";
     }
 
-    if (errorCode & 4 || errorCode & 32) {
-        if(errorCode & 4) {
-            document.getElementById("register-email-error").innerText = "Invalid email format!";
-        } else {
-            document.getElementById("register-email-error").innerText = "The email has already registered!";
-        }
+    if (errorCode & 4) {
+        registerEmailError.innerText = "Invalid email format!";
     } else {
-        document.getElementById("register-email-error").innerText = "";
+        registerEmailError.innerText = "";
     }
 
-    if (errorCode & 256) {
-        document.getElementById("register-comfirm-password-error").innerText = "The password does not match!";
+    if (errorCode & 128) {
+        registerConfirmPasswordError.innerText = "The password does not match!";
     } else {
-        document.getElementById("register-comfirm-password-error").innerText = "";
+        registerConfirmPasswordError.innerText = "";
     }
 }
 
 function updateForgetError(errorCode) {
     if(errorCode > 0) {
-        document.getElementById("forget-username-error").innerText = "Invalid username";
+        ForgetUsernameError.innerText = "Invalid username";
     } else {
-        document.getElementById("forget-username-error").innerText = "";
+        forgetUsernameError.innerText = "";
     }
 }
 
 function updateChangePasswordError(errorCode) {
     // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
-    //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
-    //             64 for incorrect password, 128 for non-existing username, 256 for unmatch confirm password
+    //             8 for sql connection error, 16 for duplicated username, 32 for incorrect password,
+    //             64 for non-existing username, 128 for unmatch confirm password
     if(errorCode & 2) {
-        document.getElementById("change-new-password-error").innerText = "Invalid password format!";
+        changeNewPasswordError.innerText = "Invalid password format!";
     } else {
-        document.getElementById("change-new-password-error").innerText = "";
+        changeNewPasswordError.innerText = "";
     }
     
-    if(errorCode & 64) {
-        document.getElementById("change-password-error").innerText = "Incorrect password!";
+    if(errorCode & 32) {
+        changePasswordError.innerText = "Incorrect password!";
     } else {
-        document.getElementById("change-password-error").innerText = "";
+        changePasswordError.innerText = "";
     }
 
-    if (errorCode & 256) {
-        document.getElementById("change-confirm-password-error").innerText = "The password does not match!";
+    if (errorCode & 128) {
+        changeConfirmPasswordError.innerText = "The password does not match!";
     } else {
-        document.getElementById("change-confirm-password-error").innerText = "";
+        changeConfirmPasswordError.innerText = "";
     }
 }
 
 function updateChangeEmailError(errorCode) {
     // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
-    //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
-    //             64 for incorrect password, 128 for non-existing username, 256 for unmatch confirm password
+    //             8 for sql connection error, 16 for duplicated username, 32 for incorrect password,
+    //             64 for non-existing username, 128 for unmatch confirm password
     if(errorCode & 4) {
-        document.getElementById("change-email-error").innerText = "Invalid email format!";
+        changeEmailError.innerText = "Invalid email format!";
     } else {
-        document.getElementById("change-email-error").innerText = "";
+        changeEmailError.innerText = "";
     }
 
-    if(errorCode & 64) {
-        document.getElementById("change-email-password-error").innerText = "Incorrect password!";
+    if(errorCode & 32) {
+        changeEmailPasswordError.innerText = "Incorrect password!";
     } else {
-        document.getElementById("change-email-password-error").innerText = "";
+        changeEmailPasswordError.innerText = "";
     }
 }
 
 function updateJoinError(errorCode) {
-    document.getElementById("join-error").innerText = "";
+    joinError.innerText = "";
     if (errorCode & 1) {
-        document.getElementById("join-error").innerText += "Invalid Room ID";
+        joinError.innerText += "Invalid Room ID";
     } else if (errorCode & 2) {
-        document.getElementById("join-error").innerText += "The Room Is Fulled";
+        joinError.innerText += "The Room Is Fulled";
     }
 }
 
@@ -554,7 +565,7 @@ function updateFriend(players) {
     updateRequestList(request);
     updateFriendList(friend);
     updateBlockList(block);
-    document.getElementById("friend-notification").innerText = friendNotificationCnt > 0 ? friendNotificationCnt : "";
+    friendNotification.innerText = friendNotificationCnt > 0 ? friendNotificationCnt : "";
 }
 
 function updatePendingList(players) {
@@ -674,7 +685,7 @@ function updateFriendList(players) {
         btn.appendChild(notificationDiv);
         btn.onclick = () => {
             friendNotificationCnt -= parseInt(notificationDiv.innerText || 0);
-            document.getElementById("friend-notification").innerText = friendNotificationCnt > 0 ? friendNotificationCnt : "";
+            friendNotification.innerText = friendNotificationCnt > 0 ? friendNotificationCnt : "";
             notificationDiv.innerText = "";
             socket.emit("get-private-message", JSON.stringify(player.userid));
             privateChatBox.setAttribute("targetid", player.userid);
@@ -984,7 +995,7 @@ socket.on("update-private-chat", (data) => {
     var {fromid, toid} = JSON.parse(data);
     if(friendWrapper.style.display != "block") {
         friendNotificationCnt++;
-        document.getElementById("friend-notification").innerText = friendNotificationCnt > 0 ? friendNotificationCnt : "";
+        friendNotification.innerText = friendNotificationCnt > 0 ? friendNotificationCnt : "";
     } else {
         var targetId = parseInt(privateChatBox.getAttribute("targetid"));
         if(toid == targetId || fromid == targetId) {
@@ -1105,7 +1116,7 @@ const login = (socket) => {
 const register = (socket) => {
     // get user input
     var username = registrationBox.querySelector("input[name='username']").value;
-    var email = registrationBox.querySelector("input[name='email']").value;
+    var email = registrationBox.querySelector("input[name='email']").value.toLowerCase();
     var password = registrationBox.querySelector("input[name='password']").value;
     var confirmPassword = registrationBox.querySelector("input[name='confirmPassword']").value;
 
@@ -1131,7 +1142,7 @@ const changePassword = (socket) => {
 const changeEmail = (socket) => {
     // get user input
     var password = changeEmailBox.querySelector("input[name='password']").value;
-    var email = changeEmailBox.querySelector("input[name='email']").value;
+    var email = changeEmailBox.querySelector("input[name='email']").value.toLowerCase();
 
     socket.emit("change-email", JSON.stringify({ password: password, email: email }));
 };

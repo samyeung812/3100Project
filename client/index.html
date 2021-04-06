@@ -31,7 +31,8 @@
         <form id="registration-box" class="box">
             <div>
                 Username
-                <input type="text" name="username" placeholder="username (3-20) length">
+                <input type="text" class="prompted-input" name="username" placeholder="username (3-20 length)">
+                <span class="prompt">no leading or trailing space</span>
                 <span id="register-username-error" class="error"></span>
             </div>
             <div>
@@ -41,13 +42,14 @@
             </div>
             <div>
                 Password
-                <input type="password" name="password" placeholder="password (8-30 length)">
+                <input type="password" class="prompted-input" name="password" placeholder="password (8-30 length)">
+                <span class="prompt">with at least 1 lower-case, 1 upper-case, 1 digit and 1 non-alphanumeric character</span>
                 <span id="register-password-error" class="error"></span>
             </div>
             <div>
-                Comfirm Password
+                Confirm Password
                 <input type="password" name="confirmPassword" placeholder="confirm password">
-                <span id="register-comfirm-password-error" class="error"></span>
+                <span id="register-confirm-password-error" class="error"></span>
             </div>
             <div class="horizontal-container">
                 <input class="submit" type="submit" value="Register">
@@ -106,11 +108,12 @@
             </div>
             <div>
                 New Password
-                <input type="password" name="newPassword" placeholder="new password">
+                <input type="password" class="prompted-input" name="newPassword" placeholder="new password (8-30 length)">
+                <span class="prompt">with at least 1 lower-case, 1 upper-case, 1 digit and 1 non-alphanumeric character</span>
                 <span id="change-new-password-error" class="error"></span>
             </div>
             <div>
-                Comfirm Password
+                Confirm Password
                 <input type="password" name="confirmPassword" placeholder="confirm password">
                 <span id="change-confirm-password-error" class="error"></span>
             </div>

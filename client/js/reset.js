@@ -1,6 +1,8 @@
 // Reset Password Form
 const resetPasswordWrapper = document.getElementById("reset-password-wrapper");
 const resetPasswordBox = document.getElementById("reset-password-box");
+const resetPasswordError = document.getElementById("reset-password-error");
+const resetConfirmPasswordError = document.getElementById("reset-confirm-password-error");
 
 resetPasswordWrapper.style.display = "block";
 
@@ -9,15 +11,15 @@ function updateResetPasswordError(errorCode) {
     //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
     //             64 for incorrect password, 128 for non-existing username, 256 for unmatch confirm password
     if(errorCode & 2) {
-        document.getElementById("reset-password-error").innerText = "Invalid password format!";
+        resetPasswordError.innerText = "Invalid password format!";
     } else {
-        document.getElementById("reset-new-password-error").innerText = "";
+        resetPasswordError.innerText = "";
     }
 
     if (errorCode & 256) {
-        document.getElementById("reset-confirm-password-error").innerText = "The password does not match!";
+        resetConfirmPasswordError.innerText = "The password does not match!";
     } else {
-        document.getElementById("reset-confirm-password-error").innerText = "";
+        resetConfirmPasswordError.innerText = "";
     }
 }
 

@@ -23,7 +23,7 @@ const io = require("socket.io")(server);
 
 const mail = require("./mail.js");
 const room = require("./room.js");
-// const game = require("./game.js");
+const ranking = require("./ranking");
 
 // const login = require("./login.js")(io);
 // const game = require("./game.js")(io);
@@ -42,6 +42,7 @@ app.get("/reset/", (req, res) => {
         if(!result || !result.forget)
         {
             res.writeHead(404, {'Content-Type': 'text/html'});
+            res.charset = "utf-8";
             res.write("404 - Page Not Found.");
             res.end();
             return;
@@ -90,6 +91,7 @@ const bcrypt = require("bcrypt");
 
 // Library for JSON Web Token (use for generating JSON web token and authentication)
 const jwt = require("jsonwebtoken");
+const { isObject } = require("util");
 
 // Secret Key for JTW Encryption and Decryption
 const JWT_SECRET_KEY = "2797822dc6bbfd45e3c23caa9307672770651c1618a1cdb29be33d7bb1eeef1840a274ee32a0d86aa9a550c9119fdaba";
@@ -187,6 +189,11 @@ function SQLQuery(queryString, args, callback)
 function updateBattlelog(user) {
     var queryString1 = "INSERT INTO battlelog (userid, opponentid, ranked, win, rankchange) VALUES (?,?,?,?,?,?);";
     var queryString2 = "INSERT INTO battlelog (userid, opponentid, ranked, win, rankchange) VALUES (?,?,?,?,?,?);";
+    var queryString3 = "UPDATE leaderboard SET ranking=? WHERE userid=?;";
+    var queryString4 = "UPDATE leaderboard SET ranking=? WHERE userid=?;";
+    // check whether user1 is online -> update rank
+    // check whether user2 is online -> update rank
+    // handle room dismiss if ranked, continue if unranked
 }
 
 // Server socket setting
@@ -227,9 +234,23 @@ io.on("connection", (socket) => {
         if(!usersInfo.has(socket.id)) return;
         if(room.getRoomId(usersInfo.get(socket.id))) return;
 
-        var roomId = room.openRoom(usersInfo.get(socket.id), false);
+        var roomId = room.openRoom([usersInfo.get(socket.id)], false);
         socket.join(roomId);
         io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
+    });
+
+    // Start room
+    socket.on("start-room", () => {
+        if(!usersInfo.has(socket.id)) return;
+
+        var user = usersInfo.get(socket.id);
+        if(!room.getRoomId(user)) return;
+
+        if(room.startRoom(user)) {
+            var roomId = room.getRoomId(user);
+            io.to(roomId).emit("room-started");
+            io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
+        }
     });
 
     // Leave room
@@ -712,12 +733,10 @@ io.on("connection", (socket) => {
                         if(roomState.start) {
                             user.state = 4;
                         } else {
-                            if(roomState.ranked) {
-                                user.state = 3;
-                            } else {
-                                user.state = 2;
-                            }
+                            user.state = 2;
                         }
+                    } else if (ranking.inQueueById(user.userid)) {
+                        user.state = 3;
                     } else {   
                         user.state = 1;
                     }
@@ -769,6 +788,30 @@ io.on("connection", (socket) => {
             });
         });
     });
+
+    socket.on("ranking-mode", () => {
+        if(!usersInfo.has(socket.id)) return;
+
+        var user = usersInfo.get(socket.id);
+        ranking.enqueuePlayer(user, (player, opponent) => {
+            var targetSocket = io.sockets.sockets.get(socketIds.get(opponent.id));
+            
+            var roomId = room.openRoom([player, opponent], true);
+            
+            socket.join(roomId);
+            targetSocket.join(roomId);
+
+            io.to(roomId).emit("ranking-match");
+            io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
+        });
+    });
+
+    socket.on("quit-ranking-mode", () => {
+        if(!usersInfo.has(socket.id)) return;
+
+        var user = usersInfo.get(socket.id);
+        ranking.dequeuePlayer(user);
+    })
 
     // Forget password page
     socket.on("reset-password", (data) => {

@@ -7,7 +7,8 @@ module.exports = {
     joinRoom,
     spectate,
     spectateFriend,
-    play
+    play,
+    startRoom
 }
 
 var rooms = new Map();  // get room id by user id
@@ -24,6 +25,7 @@ function generateCode(len) {
 }
 
 function getRoomId(user) {
+    if(!user) return null;
     if(!rooms.has(user.id)) return null;
     return rooms.get(user.id);
 }
@@ -38,14 +40,21 @@ function getRoomState(roomId) {
     return roomStates.get(roomId);
 }
 
-function initRoomState(roomId, user, ranked) {
+function initRoomState(roomId, players, ranked) {
     var state = {
         roomId: roomId,
-        start: false,
+        start: ranked,
         ranked: ranked,
-        players: [user],
+        players: players,
         spectators: [],
         gamestate: null
+    }
+    return state;
+}
+
+function initGameState() {
+    var state = {
+        chessboard: [[]]
     }
     return state;
 }
@@ -71,14 +80,32 @@ function leaveRoom(user) {
     return true;
 }
 
-function openRoom(user, ranked) {
+function openRoom(users, ranked) {
     var roomId = generateCode(6);
     while(rooms.has(roomId)) {
         roomId = generateCode(6);
     }
-    rooms.set(user.id, roomId);
-    roomStates.set(roomId, initRoomState(roomId, user, ranked));
+    users.forEach(user => {
+        rooms.set(user.id, roomId); 
+    });
+    roomStates.set(roomId, initRoomState(roomId, users, ranked));
+    if(users.length == 2) {
+        var roomState = getRoomState(roomId);
+        roomState.gamestate = initGameState();
+    }
     return roomId;
+}
+
+function startRoom(user) {
+    if(!getRoomId(user)) return false;
+    var roomId = getRoomId(user);
+    var roomState = getRoomState(roomId);
+    if(user.id == roomState.players[0].id && roomState.players.length == 2) {
+        roomState.start = true;
+        roomState.gamestate = initGameState();
+        return true;
+    }
+    return false;
 }
 
 function joinRoom(user, roomId) {
@@ -103,6 +130,7 @@ function spectate(user) {
 function spectateFriend(roomId, user) {
     var state = getRoomState(roomId);
     if(getRoomId(user)) return false;
+    if(state.ranked && !state.start) return false;
     state.spectators.push(user);
     rooms.set(user.id, roomId);
     return true;

@@ -107,10 +107,6 @@ textarea:focus, input:focus{
     align-items: flex-start;
 }
 
-.horizontal-container div{
-    margin: 0px 8px;
-}
-
 .vertical-container {
     display: flex;
     flex-direction: column;
@@ -180,6 +176,7 @@ textarea:focus, input:focus{
 
 #leaderboard div{
     grid-template-columns: minmax(200px, 75fr) minmax(100px, 25fr);
+    line-height: 30px;
 }
 
 .scrollable {
@@ -187,14 +184,6 @@ textarea:focus, input:focus{
     max-width: 90%;
     padding: 5px;
     overflow: auto;
-}
-
-.list {
-    min-width: 50%;
-}
-
-.list span{
-    color: #bbb;
 }
 
 .option {
@@ -214,6 +203,7 @@ textarea:focus, input:focus{
 }
 
 .state {
+    margin-left: 5px;
     height: 8px;
     width: 8px;
     position: relative;
@@ -261,6 +251,7 @@ textarea:focus, input:focus{
 
 #battlelog div{
     grid-template-columns: minmax(200px, 35fr) minmax(200px, 35fr) minmax(75px, 9fr) minmax(75px, 9fr) minmax(100px, 12fr);
+    line-height: 30px;
 }
 
 .grid-container {
@@ -296,4 +287,126 @@ div > div.grid-container:last-child > div{
 
 .prompted-input:focus + .prompt {
     display: block;
+}
+
+.list {
+    min-width: 50%;
+}
+
+.list span{
+    color: #bbb;
+    text-align: center;
+}
+
+.list div {
+    border: none;
+    text-align: left;
+    grid-template-columns: minmax(200px, 75fr) minmax(100px, 25fr);
+}
+
+.list .optionBox {
+    text-align: right;
+}
+
+.load-container {
+	margin: auto;
+    width: 110px;
+	height: 120px;
+}
+
+.loader {
+    position: absolute;
+	margin: auto;
+	border-radius: 100%;
+	border: 15px solid rgba(0, 0, 0, 0);
+	border-top: 15px solid #bdbdbd;
+	width: 80px;
+	height: 80px;
+}
+
+.a1 {
+	-webkit-animation: spin1 1s linear infinite;
+	        animation: spin1 1s linear infinite;
+}
+
+.a2 {
+	-webkit-animation: spin2 1s linear infinite;
+	        animation: spin2 1s linear infinite;
+}
+
+.a3 {
+	-webkit-animation: spin3 1s linear infinite;
+	        animation: spin3 1s linear infinite;
+}
+
+@-webkit-keyframes spin1 {
+	0% {
+		-webkit-transform: rotate(0deg);
+	}
+	50% {
+		-webkit-transform: rotate(60deg);
+	}
+	100% {
+		-webkit-transform: rotate(360deg);
+	}
+}
+
+@keyframes spin1 {
+    0% {
+        transform: rotate(0deg);
+    }
+    50% {
+        transform: rotate(60deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@-webkit-keyframes spin2 {
+    0% {
+        -webkit-transform: rotate(0deg);
+    }
+    50% {
+        -webkit-transform: rotate(150deg);
+    }
+    100% {
+        -webkit-transform: rotate(360deg);
+    }
+}
+
+@keyframes spin2 {
+    0% {
+        transform: rotate(0deg);
+    }
+    50% {
+        transform: rotate(150deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@-webkit-keyframes spin3 {
+    0% {
+        -webkit-transform: rotate(0deg);
+    }
+    50% {
+        -webkit-transform: rotate(240deg);
+    }
+    100% {
+        -webkit-transform: rotate(360deg);
+    }
+}
+
+@keyframes spin3 {
+    0% {
+        transform: rotate(0deg);
+    }
+    50% {
+        transform: rotate(240deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }

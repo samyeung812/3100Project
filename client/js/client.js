@@ -117,6 +117,10 @@ const privateChatName = document.getElementById("private-chat-name");
 const closePrivateChatBtn = document.getElementById("close-private-chat-button");
 const privateChatContent = document.getElementById("private-chat-content");
 
+// Ranking Mode
+const rankingWrapper = document.getElementById("ranking-wrapper");
+const closeRankingModeBtn = document.getElementById("close-ranking-mode-button");
+
 // Game Board
 const gameBoard = document.getElementById("game-board");
 
@@ -270,13 +274,13 @@ function closeFriend() {
 // Show Main Menu and Hide Game Board
 function showMenu() {
     menuWrapper.style.display = "block";
-    gameBoard.display = "none";
+    gameBoard.style.display = "none";
 }
 
 // Show Game Board and Hide Main Menu
 function showGameBoard() {
     menuWrapper.style.display = "none";
-    gameBoard.display = "block";
+    gameBoard.style.display = "block";
 }
 
 // Get Cookie by Name
@@ -394,11 +398,19 @@ function updateJoinError(errorCode) {
 }
 
 function updateRoomState(state) {
+    console.log(state);
     playersInfo.innerHTML = "";
     spectatorsInfo.innerHTML = "";
     if(!state) {
+        showMenu();
         roomWrapper.style.display = "none";
         roomChatContent.innerHTML = "";
+        return;
+    }
+
+    if(state.start) {
+        roomWrapper.style.display = "none";
+        showGameBoard();
         return;
     }
     
@@ -577,7 +589,7 @@ function updatePendingList(players) {
     }
     players.forEach(player => {
         var outterDiv = document.createElement("div");
-        outterDiv.className = "horizontal-container pending-content";
+        outterDiv.className = "grid-container pending-content";
         var div = document.createElement("div");
         var span = document.createElement("span");
         span.className = "state " + getStateName(player.state);
@@ -587,7 +599,7 @@ function updatePendingList(players) {
 
         div = document.createElement("div");
         div.className = "optionBox";
-        var btn = document.createElement("div");
+        var btn = document.createElement("span");
         // btn.type = "button";
         btn.innerText = "✖";
         btn.className = "option deny";
@@ -610,7 +622,7 @@ function updateRequestList(players) {
     }
     players.forEach(player => {
         var outterDiv = document.createElement("div");
-        outterDiv.className = "horizontal-container request-content";
+        outterDiv.className = "grid-container request-content";
         var div = document.createElement("div");
         var span = document.createElement("span");
         span.className = "state " + getStateName(player.state);
@@ -621,7 +633,7 @@ function updateRequestList(players) {
         div = document.createElement("div");
         div.className = "optionBox";
         
-        var btn = document.createElement("div");
+        var btn = document.createElement("span");
         // btn.type = "button";
         btn.innerText = "✔";
         btn.className = "option accept";
@@ -630,7 +642,7 @@ function updateRequestList(players) {
         };
         div.appendChild(btn);
         
-        btn = document.createElement("div");
+        btn = document.createElement("span");
         // btn.type = "button";
         btn.innerText = "✖";
         btn.className = "option deny";
@@ -653,7 +665,7 @@ function updateFriendList(players) {
     }
     players.forEach(player => {
         var outterDiv = document.createElement("div");
-        outterDiv.className = "horizontal-container pending-content";
+        outterDiv.className = "grid-container pending-content";
 
         var div = document.createElement("div");
         var span = document.createElement("span");
@@ -666,7 +678,7 @@ function updateFriendList(players) {
         div = document.createElement("div");
         div.className = "optionBox";
         
-        var btn = document.createElement("div");
+        var btn = document.createElement("span");
         if(player.state == 2 || player.state == 4) {
             btn.innerText = "👁";
             btn.className = "option chat";
@@ -674,12 +686,12 @@ function updateFriendList(players) {
                 socket.emit("spectate-friend", player.userid);
             };
             div.append(btn);
-            btn = document.createElement("div");
+            btn = document.createElement("span");
         }
         // btn.type = "button";
         btn.innerText = "🗨";
         btn.className = "option chat";
-        var notificationDiv = document.createElement("div");
+        var notificationDiv = document.createElement("span");
         notificationDiv.className = "message-count";
         notificationDiv.innerText = (player.unread > 0 ? player.unread : "");
         btn.appendChild(notificationDiv);
@@ -693,7 +705,7 @@ function updateFriendList(players) {
         };
         div.appendChild(btn);
 
-        btn = document.createElement("div");
+        btn = document.createElement("span");
         // btn.type = "button";
         btn.innerText = "✖";
         btn.className = "option cross";
@@ -702,7 +714,7 @@ function updateFriendList(players) {
         };
         div.appendChild(btn);
 
-        btn = document.createElement("div");
+        btn = document.createElement("span");
         // btn.type = "button";
         btn.innerText = "🛇"
         btn.className = "option block";
@@ -725,7 +737,7 @@ function updateBlockList(players) {
     }
     players.forEach(player => {
         var outterDiv = document.createElement("div");
-        outterDiv.className = "horizontal-container pending-content";
+        outterDiv.className = "grid-container pending-content";
         var div = document.createElement("div");
         var span = document.createElement("span");
         span.className = "state " + getStateName(player.state);
@@ -735,7 +747,7 @@ function updateBlockList(players) {
 
         div = document.createElement("div");
         div.className = "optionBox";
-        var btn = document.createElement("div");
+        var btn = document.createElement("span");
         // btn.type = "button";
         btn.innerText = "✖";
         btn.className = "option deny";
@@ -808,6 +820,14 @@ function showPopUpMessageBox(title, messages) {
     wrapper.appendChild(box);
     wrapper.style.display = "block";
     homePage.appendChild(wrapper);
+}
+
+function showRankingMode() {
+    rankingWrapper.style.display = "block";
+}
+
+function closeRankingMode() {
+    rankingWrapper.style.display = "none";
 }
 
 // Self Executing Function
@@ -911,6 +931,10 @@ socket.on("login", (data) => {
 socket.on("room-state", (data) => {
     var state = JSON.parse(data);
     updateRoomState(state);
+});
+
+socket.on("room-started", () => {
+    roomWrapper.style.display = "none";
 });
 
 socket.on("room-msg", (data) => {
@@ -1021,6 +1045,10 @@ socket.on("load-private-message", (data) => {
     else privateChatContent.scrollTop = originalScroll;
 });
 
+socket.on("ranking-match", (data) => {
+    closeRankingMode();
+});
+
 loginBox.onsubmit = () => { 
     login(socket);
     return false;
@@ -1076,12 +1104,24 @@ privateChatBox.onsubmit = () => {
     return false;
 }
 
+rankingBtn.addEventListener("click", () => {
+    ranking(socket);
+});
+
+closeRankingModeBtn.addEventListener("click", () => {
+    closeRanking(socket);
+});
+
 openRoomBtn.addEventListener("click", () => {
     openRoom(socket);
 });
 
 leaveBtn.addEventListener("click", () => {
     leaveRoom(socket);
+});
+
+startBtn.addEventListener("click", () => {
+    startRoom(socket);
 });
 
 spectateBtn.addEventListener("click", () => {
@@ -1147,6 +1187,16 @@ const changeEmail = (socket) => {
     socket.emit("change-email", JSON.stringify({ password: password, email: email }));
 };
 
+const ranking = (socket) => {
+    showRankingMode();
+    socket.emit("ranking-mode");
+};
+
+const closeRanking = (socket) => {
+    closeRankingMode();
+    socket.emit("quit-ranking-mode");
+};
+
 const joinRoom = (socket) => {
     var roomId = joinBox.querySelector("input[name='roomId']").value;
     socket.emit("join-room", roomId);
@@ -1161,6 +1211,10 @@ const leaveRoom = (socket) => {
     socket.emit("leave-room");
     updateRoomState(null);
 };
+
+const startRoom = (socket) => {
+    socket.emit("start-room");
+}
 
 const spectate = (socket) => {
     socket.emit("spectate");

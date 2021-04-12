@@ -3,7 +3,7 @@ module.exports = {
     inQueueById,
     enqueuePlayer,
     dequeuePlayer
-}
+};
 
 var queue = new Map();
 

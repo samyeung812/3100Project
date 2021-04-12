@@ -2,7 +2,9 @@
 <html>
 <head>
     <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mind of Crystal</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.3.10/seedrandom.min.js"></script>
     <link rel="stylesheet" href="/css/index.css">
 </head>
 <body>
@@ -256,7 +258,24 @@
         </form>
     </div>
 
-    <canvas id = "game-board"></canvas>
+    <div id="game-board">
+        <div id="stats"></div>
+        <canvas id = "canvas"></canvas>
+    </div>
+
+    <div id="images">
+        <img id="empty" src="/images/empty.png">
+        <img id="attack_enchanted" src="/images/attack_enchanted.png">
+        <img id="defense_enchanted" src="/images/defense_enchanted.png">
+        <img id="recovery_enchanted" src="/images/recovery_enchanted.png">
+        <img id="fight_enchanted" src="/images/fight_enchanted.png">
+        <img id="attack" src="/images/attack.png">
+        <img id="defense" src="/images/defense.png">
+        <img id="recovery" src="/images/recovery.png">
+        <img id="fight" src="/images/fight.png">
+        <img id="right_arrow" src="/images/right_arrow.png">
+        <img id="down_arrow" src="/images/down_arrow.png">
+    </div>
 </div>
 
 <script src="/js/client.js"></script>

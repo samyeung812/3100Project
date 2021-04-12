@@ -1,5 +1,5 @@
 // command for installing nodejs library:
-// npm install express socket.io bcrypt mysql jsonwebtoken nodemon nodemailer
+// npm install express socket.io bcrypt mysql jsonwebtoken nodemon nodemailer seedrandom
 
 // commad for starting the server
 // nodemon start
@@ -24,6 +24,11 @@ const io = require("socket.io")(server);
 const mail = require("./mail.js");
 const room = require("./room.js");
 const ranking = require("./ranking");
+const game = require("./game.js");
+
+// seed random for game
+const seedrandom = require('seedrandom');
+const rng = seedrandom();
 
 // const login = require("./login.js")(io);
 // const game = require("./game.js")(io);
@@ -91,7 +96,6 @@ const bcrypt = require("bcrypt");
 
 // Library for JSON Web Token (use for generating JSON web token and authentication)
 const jwt = require("jsonwebtoken");
-const { isObject } = require("util");
 
 // Secret Key for JTW Encryption and Decryption
 const JWT_SECRET_KEY = "2797822dc6bbfd45e3c23caa9307672770651c1618a1cdb29be33d7bb1eeef1840a274ee32a0d86aa9a550c9119fdaba";
@@ -204,13 +208,20 @@ io.on("connection", (socket) => {
         // check if user is not logged in
         if (!usersInfo.has(socket.id)) return;
 
+        var user = usersInfo.get(socket.id);
+
+        // remove user from ranking matching
+        if(ranking.inQueue(user)) {
+            ranking.dequeuePlayer(user);
+        }
+
         // wait user to reconnect for 1 minutes
         var minutes = 1;
-        if (room.getRoomId(usersInfo.get(socket.id))) setTimeout(disconnectUser, minutes * 60 * 1000, usersInfo.get(socket.id));
+        if (room.getRoomId(user)) setTimeout(disconnectUser, minutes * 60 * 1000, usersInfo.get(socket.id));
 
         // remove user online information
-        console.log(usersInfo.get(socket.id).name, "logout");
-        socketIds.delete(usersInfo.get(socket.id).id);
+        console.log(user.name, "logout");
+        socketIds.delete(user.id);
         usersInfo.delete(socket.id);
     });
 
@@ -791,8 +802,10 @@ io.on("connection", (socket) => {
 
     socket.on("ranking-mode", () => {
         if(!usersInfo.has(socket.id)) return;
-
+        
         var user = usersInfo.get(socket.id);
+        if(ranking.inQueue(user)) return;
+
         ranking.enqueuePlayer(user, (player, opponent) => {
             var targetSocket = io.sockets.sockets.get(socketIds.get(opponent.id));
             
@@ -812,6 +825,45 @@ io.on("connection", (socket) => {
         var user = usersInfo.get(socket.id);
         ranking.dequeuePlayer(user);
     })
+
+    // Handle player game move
+    socket.on("clockwise", (data) => {
+        if(!usersInfo.has(socket.id)) return;
+
+        var {x, y} = getData(data);
+        var user = usersInfo.get(socket.id);
+        if(!room.getRoomId(user)) return;
+
+        var roomId = room.getRoomId(user);
+        var roomstate = room.getRoomState(roomId);
+        if(!roomstate.start) return;
+
+        var gamestate = roomstate.gamestate;
+        if(roomstate.players[gamestate.now_player].id != user.id) return;
+        var seed = rng();
+        game.setSeed(seed);
+        game.clockwise(gamestate, x, y, seed);
+        io.to(roomId).emit("clockwise", JSON.stringify({x: x, y: y, seed: seed}));
+    });
+
+    socket.on("anti-clockwise", (data) => {
+        if(!usersInfo.has(socket.id)) return;
+
+        var {x, y} = getData(data);
+        var user = usersInfo.get(socket.id);
+        if(!room.getRoomId(user)) return;
+
+        var roomId = room.getRoomId(user);
+        var roomstate = room.getRoomState(roomId);
+        if(!roomstate.start) return;
+
+        var gamestate = roomstate.gamestate;
+        if(roomstate.players[gamestate.now_player].id != user.id) return;
+        var seed = rng();
+        game.setSeed(seed);
+        game.anticlockwise(gamestate, x, y);
+        io.to(roomId).emit("anti-clockwise", JSON.stringify({x: x, y: y, seed: seed}));
+    });
 
     // Forget password page
     socket.on("reset-password", (data) => {

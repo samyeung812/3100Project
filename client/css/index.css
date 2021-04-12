@@ -115,6 +115,8 @@ textarea:focus, input:focus{
 
 #game-board {
     display: none;
+    height: 100%;
+    width: 100%;
 }
 
 #login-page {
@@ -409,4 +411,8 @@ div > div.grid-container:last-child > div{
     100% {
         transform: rotate(360deg);
     }
+}
+
+#images {
+    display: none;
 }

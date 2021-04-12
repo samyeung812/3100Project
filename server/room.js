@@ -52,12 +52,7 @@ function initRoomState(roomId, players, ranked) {
     return state;
 }
 
-function initGameState() {
-    var state = {
-        chessboard: [[]]
-    }
-    return state;
-}
+const game = require("./game.js");
 
 function leaveRoom(user) {
     var roomId = getRoomId(user);
@@ -89,9 +84,9 @@ function openRoom(users, ranked) {
         rooms.set(user.id, roomId); 
     });
     roomStates.set(roomId, initRoomState(roomId, users, ranked));
-    if(users.length == 2) {
+    if(users.length == 2 && ranked) {
         var roomState = getRoomState(roomId);
-        roomState.gamestate = initGameState();
+        roomState.gamestate = game.initGameState();
     }
     return roomId;
 }
@@ -102,7 +97,7 @@ function startRoom(user) {
     var roomState = getRoomState(roomId);
     if(user.id == roomState.players[0].id && roomState.players.length == 2) {
         roomState.start = true;
-        roomState.gamestate = initGameState();
+        roomState.gamestate = game.initGameState();
         return true;
     }
     return false;

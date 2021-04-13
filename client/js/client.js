@@ -1865,13 +1865,13 @@ function anticlockwise(gamestate, pointx, pointy, callback)
 function attack_exec(gamestate, dissolve_value) {
     var player = gamestate.player;
     var now_player = gamestate.now_player;
-	dissolve_value.HP_increase = Math.min(dissolve_value.HP_increase, player[now_player].HP_limit - player[now_player].HP); //new bz of HP limit
-	//cout << "Attack increase: " << dissolve_value.attack_increase << "\tDefence increase: "<< dissolve_value.defence_increase << "\tHP_increase: " << dissolve_value.HP_increase << "\tTotal Damage: " << round(1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times) << endl << endl; //new!
-	player[now_player].attack = Math.trunc(player[now_player].attack + dissolve_value.attack_increase);
-	player[now_player].defence = Math.trunc(player[now_player].defence + dissolve_value.defence_increase);
-	player[now_player].HP = Math.trunc(player[now_player].HP + dissolve_value.HP_increase);
-    var damage = Math.trunc(player[(now_player-1)*-1].HP - 1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times);
-	player[(now_player-1)*-1].HP = damage;
+    dissolve_value.HP_increase = Math.min(dissolve_value.HP_increase, player[now_player].HP_limit - player[now_player].HP); //new bz of HP limit
+    //cout << "Attack increase: " << dissolve_value.attack_increase << "\tDefence increase: "<< dissolve_value.defence_increase << "\tHP_increase: " << dissolve_value.HP_increase << "\tTotal Damage: " << round(1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times) << endl << endl; //new!
+    player[now_player].attack = Math.trunc(player[now_player].attack + dissolve_value.attack_increase);
+    player[now_player].defence = Math.trunc(player[now_player].defence + dissolve_value.defence_increase);
+    player[now_player].HP = Math.trunc(player[now_player].HP + dissolve_value.HP_increase);
+    var damage = Math.trunc(1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times);
+    player[(now_player-1)*-1].HP = Math.trunc(player[(now_player-1)*-1].HP - 1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times);
     
     statsUpdate.innerHTML = "";
     statsUpdate.style.width = String(8 * blockSize) + "px";

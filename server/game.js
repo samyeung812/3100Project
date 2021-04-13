@@ -6,7 +6,6 @@ module.exports = {
 };
 
 const seedrandom = require('seedrandom');
-const { play } = require('./room');
 var rng = seedrandom();
 
 function setSeed(seed) {
@@ -15,20 +14,23 @@ function setSeed(seed) {
 
 function initGameState() {
     var state = {
-        player: [initPlayer(), initPlayer()],
+        player: [initPlayer(0), initPlayer(1)],
         chess_board: boardGenerate(),
         now_player: 0
     }
     return state;
 }
 
-function initPlayer() {
+function initPlayer(number) {
     var player = {
-        HP : 10000,
-        HP_limit : 20000,
+        HP : 100,
+        HP_limit : 1000,
         attack : 20,
         defence : 20,
     };
+    if(number) {
+        player.HP = parseInt(player.HP * 1.3);
+    }
     return player;
 }
 
@@ -60,7 +62,7 @@ function boardGenerate()
 
 function crystalGenerate()
 {	
-	var testis = Math.trunc(Math.random() * 1000)+1;
+	var testis = Math.trunc(rng() * 1000)+1;
 	//document.write(testis + " ");
 	if (1 <= testis && testis  <= 25)
 		return 1;
@@ -105,9 +107,9 @@ function check_dissolve(chess_board, dissolve_value) //new
 			// document.write("now combo: " + dissolved + "<br>");
 		}
 	} while (comboround != 0);
-	Math.round(dissolve_value.attack_increase *= 1 + (dissolved -1 ) * 0.2);
-	Math.round(dissolve_value.defence_increase *= 1 + (dissolved -1 ) * 0.2);
-	Math.round(dissolve_value.HP_increase *= 1 + (dissolved -1 ) * 0.2);
+	dissolve_value.attack_increase = Math.round(dissolve_value.attack_increase * (1 + (dissolved -1 ) * 0.2));
+	dissolve_value.defence_increase = Math.round(dissolve_value.defence_increase * (1 + (dissolved -1 ) * 0.2));
+	dissolve_value.HP_increase = Math.round(dissolve_value.HP_increase * (1 + (dissolved -1 ) * 0.2));
 	//document.write(dissolve_value.attack_increase + "<br>" + dissolve_value.defence_increase + "<br>", dissolve_value.HP_increase + "<br>" + dissolve_value.attack_times + "<br><br>");
 	// return {unchanged: not_dissolve, dissolve_value: dissolve_value}; // meow!
     return dissolve_value;
@@ -365,7 +367,10 @@ function clockwise(gamestate, pointx, pointy)
 	chess_board[pointy+1][pointx+1] = moveRD;
     var dissolve_value = check_dissolve(chess_board);
     attack_exec(gamestate, dissolve_value);
+    if(gamestate.player[0].HP <= 0) return 1;
+    if(gamestate.player[1].HP <= 0) return 0;
     gamestate.now_player ^= 1;
+    return -1;
 }
 
 function anticlockwise(gamestate, pointx, pointy)
@@ -380,7 +385,10 @@ function anticlockwise(gamestate, pointx, pointy)
 	chess_board[pointy+1][pointx+1] = moveRD;
     var dissolve_value = check_dissolve(chess_board);
     attack_exec(gamestate, dissolve_value);
+    if(gamestate.player[0].HP <= 0) return 1;
+    if(gamestate.player[1].HP <= 0) return 0;
     gamestate.now_player ^= 1;
+    return -1;
 }
 
 function attack_exec(gamestate, dissolve_value) {

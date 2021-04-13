@@ -114,6 +114,7 @@ textarea:focus, input:focus{
 }
 
 #game-board {
+    user-select: none;
     display: none;
     height: 100%;
     width: 100%;
@@ -415,4 +416,19 @@ div > div.grid-container:last-child > div{
 
 #images {
     display: none;
+}
+
+.player {
+    display: inline-block;
+    width: 50%;
+}
+
+.your-turn {
+    background-color: rgb(240, 240, 128);
+    color: #000;
+}
+
+.opponent-turn {
+    background-color: rgb(240, 128, 128);
+    color: #000;
 }

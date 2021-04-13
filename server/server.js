@@ -171,9 +171,40 @@ function disconnectUser(user) {
     if (!socketIds.has(user.id) && room.getRoomId(user)) {
         // remove user from the game
         var roomId = room.getRoomId(user);
-        room.leaveRoom(user);
-        io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
-        console.log(user.name + " disconnected from the room");
+        var roomstate = room.getRoomState(roomId);
+        if(!roomstate.start){
+            room.leaveRoom(user);
+            io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
+            console.log(user.name + " disconnected from the room");
+        } else {
+            if(roomstate.players[0].id != user.id && roomstate.players[1].id != user.id) {
+                room.leaveRoom(user);
+                io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
+                console.log(user.name + " disconnected from the room");
+            } else {
+                var winner = roomstate.players[0].id == user.id ? 1 : 0;
+                var {score} = updateBattlelog(roomstate, winner);
+                var winnerSocket = socketIds.get(roomstate.players[winner].id);
+                
+                if(io.sockets.sockets.has(winnerSocket)) io.sockets.sockets.get(winnerSocket).emit("update-user-ranking", score);
+                
+                room.leaveRoom(user);
+                console.log(user.name + " disconnected from the room");
+                
+                if(roomstate.ranked) {
+                    io.to(roomId).emit("leave-game",  JSON.stringify(null));
+                    io.of('/').adapter.rooms.get(roomId).forEach(socketId => {
+                        var u = usersInfo.get(socketId);
+                        room.leaveRoom(u);
+                        io.sockets.sockets.get(socketId).leave(roomId);
+                    });
+                } else {
+                    roomstate.start = false;
+                    roomstate.gamestate = null;
+                    io.to(roomId).emit("leave-game",  JSON.stringify(roomstate));
+                }
+            }
+        }
     }
 }
 
@@ -190,14 +221,32 @@ function SQLQuery(queryString, args, callback)
     }
 }
 
-function updateBattlelog(user) {
-    var queryString1 = "INSERT INTO battlelog (userid, opponentid, ranked, win, rankchange) VALUES (?,?,?,?,?,?);";
-    var queryString2 = "INSERT INTO battlelog (userid, opponentid, ranked, win, rankchange) VALUES (?,?,?,?,?,?);";
+function updateBattlelog(roomstate, winner) {
+    var players = roomstate.players;
+    var score = 0;
+    if(roomstate.ranked) score = 30 - Math.min(parseInt(Math.abs(players[0].ranking - players[1].ranking) / 30), 20);
+    var lose = -Math.min(players[winner ^ 1].ranking, score);
+    if(roomstate.ranked) players[winner ^ 1].ranking += lose;
+    if(roomstate.ranked) players[winner].ranking += score;
+    var queryString1 = "INSERT INTO battlelog (userid, opponentid, ranked, win, rankchange) VALUES (?,?,?,?,?);";
+    var queryString2 = "INSERT INTO battlelog (userid, opponentid, ranked, win, rankchange) VALUES (?,?,?,?,?);";
     var queryString3 = "UPDATE leaderboard SET ranking=? WHERE userid=?;";
     var queryString4 = "UPDATE leaderboard SET ranking=? WHERE userid=?;";
-    // check whether user1 is online -> update rank
-    // check whether user2 is online -> update rank
-    // handle room dismiss if ranked, continue if unranked
+    SQLQuery(queryString1, [players[0].id, players[1].id, roomstate.ranked, winner == 0, winner == 0 ? score : lose], (result, erorr) => {
+        if(!result) return;
+    });
+    SQLQuery(queryString2, [players[1].id, players[0].id, roomstate.ranked, winner == 1, winner == 1 ? score : lose], (result, erorr) => {
+        if(!result) return;
+    });
+    if(roomstate.ranked) {
+        SQLQuery(queryString3, [players[0].ranking, players[0].id], (result, erorr) => {
+            if(!result) return;
+        });
+        SQLQuery(queryString4, [players[1].ranking, players[1].id], (result, erorr) => {
+            if(!result) return;
+        });
+    }
+    return {score: score, lose: lose};
 }
 
 // Server socket setting
@@ -216,8 +265,12 @@ io.on("connection", (socket) => {
         }
 
         // wait user to reconnect for 1 minutes
-        var minutes = 1;
-        if (room.getRoomId(user)) setTimeout(disconnectUser, minutes * 60 * 1000, usersInfo.get(socket.id));
+        var minutes = 0.1;
+        if (room.getRoomId(user)) {
+            var roomId = room.getRoomId(user);
+            socket.leave(roomId);
+            setTimeout(disconnectUser, minutes * 60 * 1000, usersInfo.get(socket.id));
+        }
 
         // remove user online information
         console.log(user.name, "logout");
@@ -271,6 +324,9 @@ io.on("connection", (socket) => {
 
         var user = usersInfo.get(socket.id);
         var roomId = room.getRoomId(user);
+        var roomstate = room.getRoomState(roomId);
+
+        if(roomstate.players[0].id == user.id || roomstate.players[1].id == user.id) return;
         
         // check whether the room is still exist after leaving
         socket.leave(roomId);
@@ -842,8 +898,30 @@ io.on("connection", (socket) => {
         if(roomstate.players[gamestate.now_player].id != user.id) return;
         var seed = rng();
         game.setSeed(seed);
-        game.clockwise(gamestate, x, y, seed);
-        io.to(roomId).emit("clockwise", JSON.stringify({x: x, y: y, seed: seed}));
+        var winner = game.clockwise(gamestate, x, y, seed);
+        if(winner >= 0) {
+            var {score, lose} = updateBattlelog(roomstate, winner);
+            var winnerSocket = socketIds.get(roomstate.players[winner].id);
+            var loserSocket = socketIds.get(roomstate.players[winner^1].id);
+            io.sockets.sockets.get(winnerSocket).emit("update-user-ranking", score);
+            io.sockets.sockets.get(loserSocket).emit("update-user-ranking", lose);
+            if(roomstate.ranked) {
+                io.to(roomId).emit("gameover",  JSON.stringify(null));
+                io.to(roomId).emit("clockwise", JSON.stringify({x: x, y: y, seed: seed}));
+                io.of('/').adapter.rooms.get(roomId).forEach(socketId => {
+                    var u = usersInfo.get(socketId);
+                    room.leaveRoom(u);
+                    io.sockets.sockets.get(socketId).leave(roomId);
+                });
+            } else {
+                roomstate.start = false;
+                roomstate.gamestate = null;
+                io.to(roomId).emit("gameover",  JSON.stringify(roomstate));
+                io.to(roomId).emit("clockwise", JSON.stringify({x: x, y: y, seed: seed}));
+            }
+        } else {
+            io.to(roomId).emit("clockwise", JSON.stringify({x: x, y: y, seed: seed}));
+        }
     });
 
     socket.on("anti-clockwise", (data) => {
@@ -861,8 +939,30 @@ io.on("connection", (socket) => {
         if(roomstate.players[gamestate.now_player].id != user.id) return;
         var seed = rng();
         game.setSeed(seed);
-        game.anticlockwise(gamestate, x, y);
-        io.to(roomId).emit("anti-clockwise", JSON.stringify({x: x, y: y, seed: seed}));
+        var winner = game.anticlockwise(gamestate, x, y);
+        if(winner >= 0) {
+            var {score, lose} = updateBattlelog(roomstate, winner);
+            var winnerSocket = socketIds.get(roomstate.players[winner].id);
+            var loserSocket = socketIds.get(roomstate.players[winner^1].id);
+            io.sockets.sockets.get(winnerSocket).emit("update-user-ranking", score);
+            io.sockets.sockets.get(loserSocket).emit("update-user-ranking", lose);
+            if(roomstate.ranked) {
+                io.to(roomId).emit("gameover",  JSON.stringify(null));
+                io.to(roomId).emit("anti-clockwise", JSON.stringify({x: x, y: y, seed: seed}));
+                io.of('/').adapter.rooms.get(roomId).forEach(socketId => {
+                    var u = usersInfo.get(socketId);
+                    room.leaveRoom(u);
+                    io.sockets.sockets.get(socketId).leave(roomId);
+                });
+            } else {
+                roomstate.start = false;
+                roomstate.gamestate = null;
+                io.to(roomId).emit("gameover",  JSON.stringify(roomstate));
+                io.to(roomId).emit("anti-clockwise", JSON.stringify({x: x, y: y, seed: seed}));
+            }
+        } else {
+            io.to(roomId).emit("anti-clockwise", JSON.stringify({x: x, y: y, seed: seed}));
+        }
     });
 
     // Forget password page

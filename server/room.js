@@ -95,6 +95,7 @@ function startRoom(user) {
     if(!getRoomId(user)) return false;
     var roomId = getRoomId(user);
     var roomState = getRoomState(roomId);
+    if(roomState.start) return;
     if(user.id == roomState.players[0].id && roomState.players.length == 2) {
         roomState.start = true;
         roomState.gamestate = game.initGameState();
@@ -115,7 +116,7 @@ function joinRoom(user, roomId) {
 function spectate(user) {
     var roomId = getRoomId(user);
     var state = getRoomState(roomId);
-    if(state.gamestate) return false;
+    if(state.start) return false;
     if(user.id != state.players[1].id) return false;
     state.players = state.players.splice(0, 1);
     state.spectators.push(user);

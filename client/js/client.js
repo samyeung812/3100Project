@@ -123,6 +123,7 @@ const closeRankingModeBtn = document.getElementById("close-ranking-mode-button")
 
 // Game Board
 const gameBoard = document.getElementById("game-board");
+const stats = document.getElementById("stats");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const crystalsImg = document.getElementById("images");
@@ -139,8 +140,10 @@ var unreadRoomChatCnt = 0;
 var friendNotificationCnt = 0;
 
 // Game Storage
-var roomstate;
-var gamestate;
+var roomstate = null;
+var nextRoomstate = null;
+var gamestate = null;
+var rankingChange = 0;
 
 // Show Registration Form
 createBtn.addEventListener("click", showRegistration);
@@ -407,13 +410,37 @@ function updateJoinError(errorCode) {
     }
 }
 
-function updateGameBoard(state) {
+function updateGameBoard(state = gamestate) {
+    if(!roomstate || !gamestate) return;
     var gameWidth = gameBoard.clientWidth;
     var gameHeight = gameBoard.clientHeight;
     blockSize = Math.min(gameWidth / 8, gameHeight * 0.7 / 8);
+    stats.innerHTML = "";
+    for(var i = 0; i < 2; i++) {
+        var playerDiv = document.createElement("div");
+        playerDiv.className = "player";
+        if(state.now_player == i) {
+            if(roomstate.players[i].id == user.id) playerDiv.className += " your-turn";
+            else playerDiv.className += " opponent-turn";
+        }
+        var username = document.createElement("div");
+        var HPDiv = document.createElement("div");
+        var attackDiv = document.createElement("div");
+        var defenceDiv = document.createElement("div");
+
+        username.innerText = roomstate.players[i].name;
+        HPDiv.innerText = "HP: " + state.player[i].HP;
+        attackDiv.innerText = "Attack: " + state.player[i].attack;
+        defenceDiv.innerText = "Denfence: " + state.player[i].defence;
+
+        playerDiv.appendChild(username);
+        playerDiv.appendChild(HPDiv);
+        playerDiv.appendChild(attackDiv);
+        playerDiv.appendChild(defenceDiv);
+        stats.appendChild(playerDiv);
+    }
     canvas.width = 8 * blockSize;
     canvas.height = 8 * blockSize;
-    gamestate = state;
     boardDisplay(gamestate.chess_board);
 }
 
@@ -431,8 +458,11 @@ function updateRoomState(state) {
     if(state.start) {
         roomWrapper.style.display = "none";
         showGameBoard();
+        gamestate = state.gamestate;
         updateGameBoard(state.gamestate);
         return;
+    } else {
+        showMenu();
     }
     
     roomIdInfo.innerText = state.roomId;
@@ -560,7 +590,7 @@ function updateBattlelog(results) {
         outterDiv.appendChild(div);
         
         div = document.createElement("div");
-        div.innerText = result.ranked > 0 ? (result.rankchange) : "---";
+        div.innerText = result.ranked > 0 ? (result.rankchange > 0 ? "+" + String(result.rankchange) : result.rankchange) : "---";
         outterDiv.appendChild(div);
         
         battlelog.appendChild(outterDiv);
@@ -1073,16 +1103,75 @@ socket.on("ranking-match", (data) => {
 socket.on("clockwise", (data) =>　{
     var {x, y, seed} = JSON.parse(data);
     Math.seedrandom(seed);
-    clockwise(gamestate, x, y);
-    boardDisplay();
+    clockwise(gamestate, x, y, (winner) => {
+        if(roomstate.players[winner].id == user.id) {
+            // user.ranking += rankingChange;
+            var msg = ["You is the winner!"];
+            if(roomstate.ranked) msg.push(`Your ranking: ${String(user.ranking)} (+${String(rankingChange)})`);
+            showPopUpMessageBox("Congratulation", msg);
+            rankingChange = 0;
+        } else if(roomstate.players[winner ^ 1].id == user.id) {
+            // user.ranking += rankingChange;
+            var msg = ["You has lost the game!"];
+            if(roomstate.ranked) msg.push(`Your ranking: ${String(user.ranking)} (-${String(Math.abs(rankingChange))})`);
+            showPopUpMessageBox("Game Over", msg);
+            rankingChange = 0;
+        } else {
+            showPopUpMessageBox("Game Result", [roomstate.players[winner].name + " is the winner!"]);
+        }
+        roomstate = nextRoomstate;
+        nextRoomstate = null;
+        updateRoomState(roomstate);
+    });
 });
 
 socket.on("anti-clockwise", (data) =>　{
     var {x, y, seed} = JSON.parse(data);
     Math.seedrandom(seed);
-    anticlockwise(gamestate, x, y);
-    boardDisplay();
+    anticlockwise(gamestate, x, y, (winner) => {
+        if(roomstate.players[winner].id == user.id) {
+            user.ranking += rankingChange;
+            var msg = ["You is the winner!"];
+            if(roomstate.ranked) msg.push(`Your ranking: ${String(user.ranking)} (+${String(rankingChange)})`);
+            showPopUpMessageBox("Congratulation", msg);
+            rankingChange = 0;
+        } else if(roomstate.players[winner ^ 1].id == user.id) {
+            user.ranking += rankingChange;
+            var msg = ["You has lost the game!"];
+            if(roomstate.ranked) msg.push(`Your ranking: ${String(user.ranking)} (-${String(Math.abs(rankingChange))})`);
+            showPopUpMessageBox("Game Over", msg);
+            rankingChange = 0;
+        } else {
+            showPopUpMessageBox("Game Result", [roomstate.players[winner].name + " is the winner!"]);
+        }
+        roomstate = nextRoomstate;
+        nextRoomstate = null;
+        updateRoomState(roomstate);
+    });
 });
+
+socket.on("update-user-ranking", (rankchange) => {
+    rankingChange = rankchange;
+});
+
+socket.on("gameover", (data) => {
+    nextRoomstate = JSON.parse(data);
+});
+
+socket.on("leave-game", (data) => {
+    nextRoomstate = JSON.parse(data);
+    
+    if(roomstate.players[0].id == user.id || roomstate.players[1].id == user.id) {
+        user.ranking += rankingChange;
+        var msg = ["You is the winner!", "Your opponent have leave the game!", `Your ranking: ${String(user.ranking)} (+${String(rankingChange)})`];
+        showPopUpMessageBox("Congratulation", msg);
+        rankingChange = 0;
+    }
+
+    roomstate = nextRoomstate;
+    nextRoomstate = null;
+    updateRoomState(roomstate);
+})
 
 loginBox.onsubmit = () => { 
     login(socket);
@@ -1438,21 +1527,6 @@ function initDissolveValue() {
     return dissolve_value;
 }
 
-function boardGenerate()
-{
-    var chess_board = [];
-    for (var i = 0; i < 8; i++) 
-    {
-        chess_board.push([]);
-        for (var j = 0; j < 8; j++)
-        {
-            chess_board[i][j] = crystalGenerate();
-        }
-    }
-    check_dissolve(chess_board);
-    return chess_board;
-}
-
 function crystalGenerate()
 {	
 	var testis = Math.trunc(Math.random() * 1000)+1;
@@ -1475,7 +1549,7 @@ function crystalGenerate()
 		return 8;
 }
 
-function check_dissolve(chess_board, dissolve_value) //new
+function check_dissolve(chess_board, callback) //new
 {
     var dissolve_value = initDissolveValue();
 	// var not_dissolve = true;
@@ -1500,12 +1574,13 @@ function check_dissolve(chess_board, dissolve_value) //new
 			// document.write("now combo: " + dissolved + "<br>");
 		}
 	} while (comboround != 0);
-	Math.round(dissolve_value.attack_increase *= 1 + (dissolved -1 ) * 0.2);
-	Math.round(dissolve_value.defence_increase *= 1 + (dissolved -1 ) * 0.2);
-	Math.round(dissolve_value.HP_increase *= 1 + (dissolved -1 ) * 0.2);
+    
+	dissolve_value.attack_increase = Math.round(dissolve_value.attack_increase * (1 + (dissolved -1 ) * 0.2));
+	dissolve_value.defence_increase = Math.round(dissolve_value.defence_increase * (1 + (dissolved -1 ) * 0.2));
+	dissolve_value.HP_increase = Math.round(dissolve_value.HP_increase * (1 + (dissolved -1 ) * 0.2));
 	//document.write(dissolve_value.attack_increase + "<br>" + dissolve_value.defence_increase + "<br>", dissolve_value.HP_increase + "<br>" + dissolve_value.attack_times + "<br><br>");
 	// return {unchanged: not_dissolve, dissolve_value: dissolve_value}; // meow!
-    return dissolve_value;
+    callback(dissolve_value);
 }
 
 function dissolve(chess_board, combo, dissolve_value) {
@@ -1748,7 +1823,7 @@ function fall(chess_board)
 		}		
 }
 
-function clockwise(gamestate, pointx, pointy)
+function clockwise(gamestate, pointx, pointy, callback)
 {
     if(pointx < 0 || pointx > 7) return false;
     if(pointy < 0 || pointy > 7) return false;
@@ -1758,12 +1833,16 @@ function clockwise(gamestate, pointx, pointy)
 	chess_board[pointy+1][pointx] = moveD;
 	chess_board[pointy][pointx+1] = moveR;
 	chess_board[pointy+1][pointx+1] = moveRD;
-    var dissolve_value = check_dissolve(chess_board);
-    attack_exec(gamestate, dissolve_value);
-    gamestate.now_player ^= 1;
+    check_dissolve(chess_board, (dissolve_value) => {
+        attack_exec(gamestate, dissolve_value);
+        gamestate.now_player ^= 1;
+        updateGameBoard();
+        if(gamestate.player[0].HP <= 0) callback(1);
+        if(gamestate.player[1].HP <= 0) callback(0);
+    });
 }
 
-function anticlockwise(gamestate, pointx, pointy)
+function anticlockwise(gamestate, pointx, pointy, callback)
 {
     if(pointx < 0 || pointx > 7) return false;
     if(pointy < 0 || pointy > 7) return false;
@@ -1773,9 +1852,13 @@ function anticlockwise(gamestate, pointx, pointy)
 	chess_board[pointy+1][pointx] = moveD;
 	chess_board[pointy][pointx+1] = moveR;
 	chess_board[pointy+1][pointx+1] = moveRD;
-    var dissolve_value = check_dissolve(chess_board);
-    attack_exec(gamestate, dissolve_value);
-    gamestate.now_player ^= 1;
+    check_dissolve(chess_board, (dissolve_value) => {
+        attack_exec(gamestate, dissolve_value);
+        gamestate.now_player ^= 1;
+        updateGameBoard();
+        if(gamestate.player[0].HP <= 0) callback(1);
+        if(gamestate.player[1].HP <= 0) callback(0);
+    });
 }
 
 function attack_exec(gamestate, dissolve_value) {

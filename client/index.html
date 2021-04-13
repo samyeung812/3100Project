@@ -1,23 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Mind of Crystal</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.3.10/seedrandom.min.js"></script>
     <link rel="stylesheet" href="/css/index.css">
+    <link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet'>
 </head>
 <body>
 
 <div id="login-page" class="page">
     <div id="login-wrapper" class="wrapper popup">
         <form id="login-box" class="box">
-            <div>
+            <div class="input-box">
                 Username
                 <input type="text" name="username" placeholder="username">
                 <span id="login-username-error" class="error"></span>
             </div>
-            <div>
+            <div class="input-box">
                 Password
                 <input type="password" name="password" placeholder="password">
                 <span id="login-password-error" class="error"></span>
@@ -31,24 +32,24 @@
 
     <div id="registration-wrapper" class="wrapper popup">
         <form id="registration-box" class="box">
-            <div>
+            <div class="input-box">
                 Username
                 <input type="text" class="prompted-input" name="username" placeholder="username (3-20 length)">
                 <span class="prompt">no leading or trailing space</span>
                 <span id="register-username-error" class="error"></span>
             </div>
-            <div>
+            <div class="input-box">
                 Email
                 <input type="text" name="email" placeholder="email@*.com">
                 <span id="register-email-error" class="error"></span>
             </div>
-            <div>
+            <div class="input-box">
                 Password
                 <input type="password" class="prompted-input" name="password" placeholder="password (8-30 length)">
                 <span class="prompt">with at least 1 lower-case, 1 upper-case, 1 digit and 1 non-alphanumeric character</span>
                 <span id="register-password-error" class="error"></span>
             </div>
-            <div>
+            <div class="input-box">
                 Confirm Password
                 <input type="password" name="confirmPassword" placeholder="confirm password">
                 <span id="register-confirm-password-error" class="error"></span>
@@ -62,7 +63,7 @@
 
     <div id="forget-wrapper" class="wrapper popup">
         <form id="forget-box" class="box">
-            <div>
+            <div class="input-box">
                 Username
                 <input type="text" name="username" placeholder="username">
                 <span id="forget-username-error" class="error"></span>
@@ -103,18 +104,18 @@
 
     <div id="change-password-wrapper" class="wrapper popup">
         <form id="change-password-box" class="box">
-            <div>
+            <div class="input-box">
                 Original Password
                 <input type="password" name="originalPassword" placeholder="original password">
                 <span id="change-password-error" class="error"></span>
             </div>
-            <div>
+            <div class="input-box">
                 New Password
                 <input type="password" class="prompted-input" name="newPassword" placeholder="new password (8-30 length)">
                 <span class="prompt">with at least 1 lower-case, 1 upper-case, 1 digit and 1 non-alphanumeric character</span>
                 <span id="change-new-password-error" class="error"></span>
             </div>
-            <div>
+            <div class="input-box">
                 Confirm Password
                 <input type="password" name="confirmPassword" placeholder="confirm password">
                 <span id="change-confirm-password-error" class="error"></span>
@@ -128,12 +129,12 @@
 
     <div id="change-email-wrapper" class="wrapper popup">
         <form id="change-email-box" class="box">
-            <div>
+            <div class="input-box">
                 Password
                 <input type="password" name="password" placeholder="password">
                 <span id="change-email-password-error" class="error"></span>
             </div>
-            <div>
+            <div class="input-box">
                 New Email
                 <input type="text" name="email" placeholder="email@*.com">
                 <span id="change-email-error" class="error"></span>
@@ -194,7 +195,7 @@
 
     <div id="leaderboard-wrapper" class="wrapper popup">
         <form id="leaderboard-box" class="box">
-            <div class="horizontal-container">
+            <div class="horizontal-container input-box">
                 <input type="text" name="username" placeholder="search player">
                 <input class="submit" type="submit" value="Search">
             </div>
@@ -205,7 +206,7 @@
 
     <div id="battlelog-wrapper" class="wrapper popup">
         <form id="battlelog-box" class="box">
-            <div class="horizontal-container">
+            <div class="horizontal-container input-box">
                 <input type="text" name="username" placeholder="search player">
                 <input class="submit" type="submit" value="Search">
             </div>
@@ -216,7 +217,7 @@
 
     <div id="friend-wrapper" class="wrapper popup">
         <form id="friend-box" class="box">
-            <div class="horizontal-container">
+            <div class="horizontal-container input-box">
                 <input type="text" name="username" placeholder="add new friend">
                 <input class="submit" type="submit" value="Request">
             </div>

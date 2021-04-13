@@ -141,10 +141,13 @@ var unreadRoomChatCnt = 0;
 var friendNotificationCnt = 0;
 
 // Game Storage
+var updating = false;
 var roomstate = null;
 var nextRoomstate = null;
 var gamestate = null;
 var rankingChange = 0;
+var dissolve_value;
+var dissolved;
 
 // Show Registration Form
 createBtn.addEventListener("click", showRegistration);
@@ -432,7 +435,7 @@ function updateGameBoard(state = gamestate) {
         username.innerText = roomstate.players[i].name;
         HPDiv.innerText = "HP: " + state.player[i].HP;
         attackDiv.innerText = "Attack: " + state.player[i].attack;
-        defenceDiv.innerText = "Denfence: " + state.player[i].defence;
+        defenceDiv.innerText = "Defence: " + state.player[i].defence;
 
         playerDiv.appendChild(username);
         playerDiv.appendChild(HPDiv);
@@ -770,7 +773,7 @@ function updateFriendList(players) {
 
         btn = document.createElement("span");
         // btn.type = "button";
-        btn.innerText = "🛇"
+        btn.innerText = "🚫";
         btn.className = "option block";
         btn.onclick = () => {
             socket.emit("block-user", JSON.stringify(player.userid));
@@ -940,6 +943,7 @@ socket.on("register-result", (errorCode) => {
         closeRegistration();
     }
     updateRegistrationError(errorCode);
+    console.log(errorCode);
 });
 
 socket.on("forget-password-result", (errorCode) => {
@@ -1109,7 +1113,7 @@ socket.on("clockwise", (data) =>　{
     clockwise(gamestate, x, y, (winner) => {
         if(roomstate.players[winner].id == user.id) {
             user.ranking += rankingChange;
-            var msg = ["You is the winner!"];
+            var msg = ["You are the winner!"];
             if(roomstate.ranked) msg.push(`Your ranking: ${String(user.ranking)} (+${String(rankingChange)})`);
             showPopUpMessageBox("Congratulation", msg);
             rankingChange = 0;
@@ -1125,6 +1129,7 @@ socket.on("clockwise", (data) =>　{
         roomstate = nextRoomstate;
         nextRoomstate = null;
         updateRoomState(roomstate);
+        updating = false;
     });
 });
 
@@ -1150,6 +1155,7 @@ socket.on("anti-clockwise", (data) =>　{
         roomstate = nextRoomstate;
         nextRoomstate = null;
         updateRoomState(roomstate);
+        updating = false;
     });
 });
 
@@ -1450,6 +1456,7 @@ function getCrystal(number) {
 }
 
 canvas.addEventListener("mousedown", (e) => {
+    if(updating) return;
     if(roomstate.players[gamestate.now_player].id != user.id) return;
     if(mouseIsDown) return;
     clickPos.x = e.x - canvas.offsetLeft;
@@ -1487,6 +1494,7 @@ canvas.addEventListener("mousemove", (e) => {
 });
 
 canvas.addEventListener("touchstart", (e) => {
+    if(updating) return;
     if(roomstate.players[gamestate.now_player].id != user.id) return;
     if(mouseIsDown) return;
     clickPos.x = e.touches[0].clientX - canvas.offsetLeft;
@@ -1552,41 +1560,20 @@ function crystalGenerate()
 		return 8;
 }
 
-function check_dissolve(chess_board, callback) //new
-{
-    var dissolve_value = initDissolveValue();
-	// var not_dissolve = true;
-	// boardDisplay(chess_board);
-	var comboround;
-	var dissolved=0;
-	
-	do
-	{
-		comboround = dissolved;
-		dissolved = dissolve(chess_board, dissolved, dissolve_value);
-		comboround -= dissolved;
-		if (comboround != 0)
-		{
-			// not_dissolve = false; //mew!
-			// document.write("Dissolved! <br><br>");
-			// boardDisplay(chess_board);
-			fall(chess_board);
-			fill(chess_board);
-			// document.write("<br>Fall and Fill!!<br><br>");
-			// boardDisplay(chess_board);
-			// document.write("now combo: " + dissolved + "<br>");
-		}
-	} while (comboround != 0);
-    
-	dissolve_value.attack_increase = Math.round(dissolve_value.attack_increase * (1 + (dissolved -1 ) * 0.2));
-	dissolve_value.defence_increase = Math.round(dissolve_value.defence_increase * (1 + (dissolved -1 ) * 0.2));
-	dissolve_value.HP_increase = Math.round(dissolve_value.HP_increase * (1 + (dissolved -1 ) * 0.2));
-	//document.write(dissolve_value.attack_increase + "<br>" + dissolve_value.defence_increase + "<br>", dissolve_value.HP_increase + "<br>" + dissolve_value.attack_times + "<br><br>");
-	// return {unchanged: not_dissolve, dissolve_value: dissolve_value}; // meow!
-    callback(dissolve_value);
+function check_dissolve(chess_board, callback) {
+    dissolve_value = initDissolveValue();
+    dissolved = 0;
+    dissolve(chess_board, () => {
+        dissolve_value.attack_increase = Math.round(dissolve_value.attack_increase * (1 + (dissolved -1 ) * 0.2));
+        dissolve_value.defence_increase = Math.round(dissolve_value.defence_increase * (1 + (dissolved -1 ) * 0.2));
+        dissolve_value.HP_increase = Math.round(dissolve_value.HP_increase * (1 + (dissolved -1 ) * 0.2));
+        //document.write(dissolve_value.attack_increase + "<br>" + dissolve_value.defence_increase + "<br>", dissolve_value.HP_increase + "<br>" + dissolve_value.attack_times + "<br><br>");
+        // return {unchanged: not_dissolve, dissolve_value: dissolve_value}; // meow!
+        callback();
+    })
 }
 
-function dissolve(chess_board, combo, dissolve_value) {
+function dissolve(chess_board, callback) {
     var A = Array(10).fill().map(() => Array(10).fill(0));
     var B = Array(10).fill().map(() => Array(10).fill(0));
     var C = Array(10).fill().map(() => Array(10).fill(0));
@@ -1686,50 +1673,47 @@ function dissolve(chess_board, combo, dissolve_value) {
         }
     }
     
-    /*
-    for (var i = 0; i < 10; i++)
-    {
-        for (var j = 0; j < 10; j++)
-            document.write(A[i][j] + "   ");
-        document.write("<br>");
-    }
-    document.write("<br>");
-    for (var i = 0; i < 10; i++)
-    {
-        for (var j = 0; j < 10; j++)
-            document.write(B[i][j] + "   ");
-        document.write("<br>");
-    }
-    document.write("<br>");
-    for (var i = 0; i < 10; i++)
-    {
-        for (var j = 0; j < 10; j++)
-            document.write(C[i][j] + "   ");
-        document.write("<br>");
-    }
-    document.write("<br>");
-    for (var i = 0; i < 10; i++)
-    {
-        for (var j = 0; j < 10; j++)
-            document.write(D[i][j] + "   ");
-        document.write("<br>");
-    }
-    document.write("<br>");
-    for (var i = 0; i < 10; i++)
-    {
-        for (var j = 0; j < 10; j++)
-            document.write(E[i][j] + "   ");
-        document.write("<br>");
-    }
-    */
-    //sunny
     var total_com = 0;
     total_com = each_type_combo(A, chess_board, total_com, dissolve_value);
     total_com = each_type_combo(B, chess_board, total_com, dissolve_value);
     total_com = each_type_combo(C, chess_board, total_com, dissolve_value);
     total_com = each_type_combo(D, chess_board, total_com, dissolve_value);
     total_com = each_type_combo(E, chess_board, total_com, dissolve_value);
-    return total_com + combo;
+    dissolved += total_com;
+    
+    updateGameBoard();
+    if(total_com == 0) {
+        callback();
+    } else {
+        setTimeout(fallAndFill, 500, chess_board, callback);
+    }
+}
+
+function fallAndFill(chess_board, callback) {
+    var falled = false;
+
+    for(var y = 7; y >= 1; y--) {
+        for(var x = 0; x < 8; x++) {
+            if(chess_board[y][x] == -1) {
+                falled = true;
+                chess_board[y][x] = chess_board[y-1][x];
+                chess_board[y-1][x] = -1;
+            }
+        }
+    }
+    
+    for(var x = 0; x < 8; x++) {
+        if(chess_board[0][x] == -1) {
+            chess_board[0][x] = crystalGenerate();
+        }
+    }
+
+    updateGameBoard();
+    if(falled) {
+        setTimeout(fallAndFill, 200, chess_board, callback);
+    } else {
+        setTimeout(dissolve, 200, chess_board, callback);
+    }
 }
 
 function each_type_combo(A, chess_board, total_com, dissolve_value)
@@ -1799,49 +1783,25 @@ function each_type_combo_recursion(A,chess_board,this_com, crystal_in_combo,i, j
 	
 }
 
-function fill(chess_board)
-{
-	for (var i = 7; i >= 0; i--)
-		for (var j = 7; j >= 0; j--)
-		{
-			if (chess_board[i][j] == -1)
-				chess_board[i][j] = crystalGenerate();
-		}
-}
-
-function fall(chess_board)
-{
-	for (var i = 6; i >= 0; i--)
-		for (var j = 7; j >= 0; j--)
-		{
-			var placex = j;
-			var placey = i;
-			while ((placey+1 <= 7) && (chess_board[placey+1][placex] == -1))
-			{
-			    var temp = chess_board[placey][placex];
-				chess_board[placey][placex] = chess_board[placey+1][placex];
-				chess_board[placey+1][placex] = temp;
-				placey++;
-			}
-		}		
-}
-
 function clockwise(gamestate, pointx, pointy, callback)
 {
     if(pointx < 0 || pointx > 7) return false;
     if(pointy < 0 || pointy > 7) return false;
+    updating = true;
     var chess_board = gamestate.chess_board;
 	var moveO =  chess_board[pointy+1][pointx], moveR = chess_board[pointy][pointx], moveD = chess_board[pointy+1][pointx+1], moveRD = chess_board[pointy][pointx+1];
 	chess_board[pointy][pointx] = moveO;
 	chess_board[pointy+1][pointx] = moveD;
 	chess_board[pointy][pointx+1] = moveR;
 	chess_board[pointy+1][pointx+1] = moveRD;
-    check_dissolve(chess_board, (dissolve_value) => {
+    updateGameBoard();
+    setTimeout(check_dissolve, 500, chess_board, () => {
         attack_exec(gamestate, dissolve_value);
         gamestate.now_player ^= 1;
         updateGameBoard();
-        if(gamestate.player[0].HP <= 0) callback(1);
-        if(gamestate.player[1].HP <= 0) callback(0);
+        if(gamestate.player[0].HP <= 0) setTimeout(callback , 800, 1);
+        if(gamestate.player[1].HP <= 0) setTimeout(callback , 800, 0);
+        if(gamestate.player[0].HP > 0 && gamestate.player[1].HP > 0) updating = false;
     });
 }
 
@@ -1849,18 +1809,21 @@ function anticlockwise(gamestate, pointx, pointy, callback)
 {
     if(pointx < 0 || pointx > 7) return false;
     if(pointy < 0 || pointy > 7) return false;
+    updating = true;
     var chess_board = gamestate.chess_board;
 	var moveO = chess_board[pointy][pointx+1], moveR = chess_board[pointy+1][pointx+1], moveD = chess_board[pointy][pointx], moveRD = chess_board[pointy+1][pointx];
 	chess_board[pointy][pointx] = moveO;
 	chess_board[pointy+1][pointx] = moveD;
 	chess_board[pointy][pointx+1] = moveR;
 	chess_board[pointy+1][pointx+1] = moveRD;
-    check_dissolve(chess_board, (dissolve_value) => {
+    updateGameBoard();
+    setTimeout(check_dissolve, 500, chess_board, () => {
         attack_exec(gamestate, dissolve_value);
         gamestate.now_player ^= 1;
         updateGameBoard();
-        if(gamestate.player[0].HP <= 0) callback(1);
-        if(gamestate.player[1].HP <= 0) callback(0);
+        if(gamestate.player[0].HP <= 0) setTimeout(callback , 800, 1);
+        if(gamestate.player[1].HP <= 0) setTimeout(callback , 800, 0);
+        if(gamestate.player[0].HP > 0 && gamestate.player[1].HP > 0) updating = false;
     });
 }
 
@@ -1876,14 +1839,14 @@ function attack_exec(gamestate, dissolve_value) {
     player[(now_player-1)*-1].HP = Math.trunc(player[(now_player-1)*-1].HP - 1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times);
     
     statsUpdate.innerHTML = "";
-    statsUpdate.style.width = String(8 * blockSize) + "px";
+    statsUpdate.style.width = String(8 * blockSize) * 0.8 + "px";
 
     var msg = document.createElement("div");
     msg.className = "horizontal-container";
     var attribute = document.createElement("div");
     attribute.innerHTML = "HP Recovery: ";
     var value = document.createElement("div");
-    value.innerText = dissolve_value.HP_increase;
+    value.innerText = Math.max(0, dissolve_value.HP_increase);
     msg.appendChild(attribute);
     msg.appendChild(value);
     statsUpdate.appendChild(msg);

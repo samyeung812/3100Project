@@ -23,13 +23,13 @@ function initGameState() {
 
 function initPlayer(number) {
     var player = {
-        HP : 100,
-        HP_limit : 1000,
+        HP : 1000,
+        HP_limit : 10000,
         attack : 20,
         defence : 20,
     };
     if(number) {
-        player.HP = parseInt(player.HP * 1.3);
+        player.HP = parseInt(player.HP + 300);
     }
     return player;
 }
@@ -100,8 +100,7 @@ function check_dissolve(chess_board, dissolve_value) //new
 			not_dissolve = false; //mew!
 			// document.write("Dissolved! <br><br>");
 			// boardDisplay(chess_board);
-			fall(chess_board);
-			fill(chess_board);
+			fallAndFill(chess_board);
 			// document.write("<br>Fall and Fill!!<br><br>");
 			// boardDisplay(chess_board);
 			// document.write("now combo: " + dissolved + "<br>");
@@ -328,31 +327,27 @@ function each_type_combo_recursion(A,chess_board,this_com, crystal_in_combo,i, j
 	
 }
 
-function fill(chess_board)
-{
-	for (var i = 7; i >= 0; i--)
-		for (var j = 7; j >= 0; j--)
-		{
-			if (chess_board[i][j] == -1)
-				chess_board[i][j] = crystalGenerate();
-		}
-}
-
-function fall(chess_board)
-{
-	for (var i = 6; i >= 0; i--)
-		for (var j = 7; j >= 0; j--)
-		{
-			var placex = j;
-			var placey = i;
-			while ((placey+1 <= 7) && (chess_board[placey+1][placex] == -1))
-			{
-			    var temp = chess_board[placey][placex];
-				chess_board[placey][placex] = chess_board[placey+1][placex];
-				chess_board[placey+1][placex] = temp;
-				placey++;
-			}
-		}		
+function fallAndFill(chess_board) {
+    var flag = true;
+    while(flag) {
+        var falled = false;
+        for(var y = 7; y >= 1; y--) {
+            for(var x = 0; x < 8; x++) {
+                if(chess_board[y][x] == -1) {
+                    falled = true;
+                    chess_board[y][x] = chess_board[y-1][x];
+                    chess_board[y-1][x] = -1;
+                }
+            }
+        }
+        
+        for(var x = 0; x < 8; x++) {
+            if(chess_board[0][x] == -1) {
+                chess_board[0][x] = crystalGenerate();
+            }
+        }
+        flag = falled;
+    }
 }
 
 function clockwise(gamestate, pointx, pointy)

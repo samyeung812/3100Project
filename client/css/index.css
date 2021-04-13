@@ -3,6 +3,7 @@ html, body {
     margin: 0px;
     height: 100%;
     width: 100%;
+    /* font-family: "Droid Sans", sans-serif; */
 }
 
 div {
@@ -163,7 +164,6 @@ textarea:focus, input:focus{
     display: inline;
     position: absolute;
     font-weight: 900;
-    font-family: 'Trebuchet MS', sans-serif;
     font-size: 10px;
     text-align: center;
     border-radius: 50%;
@@ -328,18 +328,18 @@ div > div.grid-container:last-child > div{
 }
 
 .a1 {
-	-webkit-animation: spin1 1.5s linear infinite;
-	        animation: spin1 1.5s linear infinite;
+	-webkit-animation: spin1 1.25s linear infinite;
+	        animation: spin1 1.25s linear infinite;
 }
 
 .a2 {
-	-webkit-animation: spin2 1.5s linear infinite;
-	        animation: spin2 1.5s linear infinite;
+	-webkit-animation: spin2 1.25s linear infinite;
+	        animation: spin2 1.25s linear infinite;
 }
 
 .a3 {
-	-webkit-animation: spin3 1.5s linear infinite;
-	        animation: spin3 1.5s linear infinite;
+	-webkit-animation: spin3 1.25s linear infinite;
+	        animation: spin3 1.25s linear infinite;
 }
 
 @-webkit-keyframes spin1 {
@@ -435,4 +435,28 @@ div > div.grid-container:last-child > div{
 
 #stats-update {
     margin: auto;
+}
+
+@media (max-width:768px) {
+
+.box input[type=text] {
+    width: 200px;
+}
+
+.box input[type=password] {
+    width: 200px;
+}
+
+.input-box {
+    display: block !important;
+}
+
+.input-box input[type=text] {
+    width: 90% !important;
+}
+
+.input-box input[type=password] {
+    width: 90% !important;
+}
+
 }

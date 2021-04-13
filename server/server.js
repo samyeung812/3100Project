@@ -223,8 +223,9 @@ function SQLQuery(queryString, args, callback)
 
 function updateBattlelog(roomstate, winner) {
     var players = roomstate.players;
+    if(players.length == 0) return {score: 0, lose: 0};
     var score = 0;
-    if(roomstate.ranked) score = 30 - Math.min(parseInt(Math.abs(players[0].ranking - players[1].ranking) / 30), 20);
+    if(roomstate.ranked) score = 30 - Math.min(parseInt(Math.abs(players[0].ranking - players[1].ranking) / 50), 20);
     var lose = -Math.min(players[winner ^ 1].ranking, score);
     if(roomstate.ranked) players[winner ^ 1].ranking += lose;
     if(roomstate.ranked) players[winner].ranking += score;
@@ -1134,8 +1135,8 @@ io.on("connection", (socket) => {
                     SQLQuery(queryString2, [email, user.id], (result, error) => {
                         if(!result) {
                             errorCode |= 8;
-                            socket.emit("change-email-result", errorCode);
                         }
+                        socket.emit("change-email-result", errorCode);
                     });
                     return;
                 }
@@ -1159,18 +1160,22 @@ io.on("connection", (socket) => {
             // send login message to user
             var user = res.user;
             
-            // update user online information
-            updateUserConnection(user, socket.id, () => {
-                // check whether user disconnected from game and reconenct it
-                socket.emit("login", JSON.stringify(usersInfo.get(socket.id)));
-                var roomId = room.getRoomId(user);
-                if (roomId) {
-                    socket.emit("room-state", JSON.stringify(room.getRoomState(roomId)));
-                    socket.join(roomId);
-                    console.log(user.name + " reconnected to the game");
-                }
+            var queryString = "SELECT userid FROM accounts WHERE userid=?;";
+            SQLQuery(queryString, [user.id], (result, error) => {
+                if(!result || !result[0]) return;
+                // update user online information
+                updateUserConnection(user, socket.id, () => {
+                    // check whether user disconnected from game and reconenct it
+                    socket.emit("login", JSON.stringify(usersInfo.get(socket.id)));
+                    var roomId = room.getRoomId(user);
+                    if (roomId) {
+                        socket.emit("room-state", JSON.stringify(room.getRoomState(roomId)));
+                        socket.join(roomId);
+                        console.log(user.name + " reconnected to the game");
+                    }
+                });
+                console.log(user.name, "login");
             });
-            console.log(user.name, "login");
         });
     });
     
@@ -1257,11 +1262,19 @@ io.on("connection", (socket) => {
                 // encrypt user password
                 const hashedPassword = await bcrypt.hash(password, 10);
 
-                SQLQuery(queryString2 + queryString3, [username, email, hashedPassword], (result, error) => {
+                SQLQuery(queryString2, [username, email, hashedPassword], (result, error) => {
                     if(!result) {
                         errorCode |= 8;
+                        socket.emit("register-result", errorCode);
+                        return;
                     }
-                    socket.emit("register-result", errorCode);
+                    SQLQuery(queryString3, [], (result, error) => {
+                        if(!result) {
+                            errorCode |= 8;
+                        }
+                        socket.emit("register-result", errorCode);
+                        return;
+                    })
                 });
             } else {
                 socket.emit("register-result", errorCode);

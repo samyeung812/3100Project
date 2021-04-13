@@ -1105,13 +1105,13 @@ socket.on("clockwise", (data) =>　{
     Math.seedrandom(seed);
     clockwise(gamestate, x, y, (winner) => {
         if(roomstate.players[winner].id == user.id) {
-            // user.ranking += rankingChange;
+            user.ranking += rankingChange;
             var msg = ["You is the winner!"];
             if(roomstate.ranked) msg.push(`Your ranking: ${String(user.ranking)} (+${String(rankingChange)})`);
             showPopUpMessageBox("Congratulation", msg);
             rankingChange = 0;
         } else if(roomstate.players[winner ^ 1].id == user.id) {
-            // user.ranking += rankingChange;
+            user.ranking += rankingChange;
             var msg = ["You has lost the game!"];
             if(roomstate.ranked) msg.push(`Your ranking: ${String(user.ranking)} (-${String(Math.abs(rankingChange))})`);
             showPopUpMessageBox("Game Over", msg);

@@ -264,7 +264,7 @@ io.on("connection", (socket) => {
             ranking.dequeuePlayer(user);
         }
 
-        // wait user to reconnect for 1 minutes
+        // wait user to reconnect for 0.5 minutes
         var minutes = 0.5;
         if (room.getRoomId(user)) {
             var roomId = room.getRoomId(user);
@@ -326,7 +326,9 @@ io.on("connection", (socket) => {
         var roomId = room.getRoomId(user);
         var roomstate = room.getRoomState(roomId);
 
-        if(roomstate.players[0].id == user.id || roomstate.players[1].id == user.id) return;
+        if(roomstate.start) {
+            if(roomstate.players[0].id == user.id || roomstate.players[1].id == user.id) return;
+        }
         
         // check whether the room is still exist after leaving
         socket.leave(roomId);

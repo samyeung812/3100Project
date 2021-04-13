@@ -453,6 +453,7 @@ function updateRoomState(state) {
         showMenu();
         roomWrapper.style.display = "none";
         roomChatContent.innerHTML = "";
+        statsUpdate.innerHTML = "";
         return;
     }
 
@@ -464,6 +465,7 @@ function updateRoomState(state) {
         return;
     } else {
         showMenu();
+        statsUpdate.innerHTML = "";
     }
     
     roomIdInfo.innerText = state.roomId;
@@ -591,7 +593,7 @@ function updateBattlelog(results) {
         outterDiv.appendChild(div);
         
         div = document.createElement("div");
-        div.innerText = result.ranked > 0 ? (result.rankchange > 0 ? "+" + String(result.rankchange) : result.rankchange) : "---";
+        div.innerText = result.ranked > 0 ? (result.rankchange > 0 ? "+" + String(result.rankchange) : "-" + String(Math.abs(result.rankchange))) : "---";
         outterDiv.appendChild(div);
         
         battlelog.appendChild(outterDiv);
@@ -1870,7 +1872,7 @@ function attack_exec(gamestate, dissolve_value) {
     player[now_player].attack = Math.trunc(player[now_player].attack + dissolve_value.attack_increase);
     player[now_player].defence = Math.trunc(player[now_player].defence + dissolve_value.defence_increase);
     player[now_player].HP = Math.trunc(player[now_player].HP + dissolve_value.HP_increase);
-    var damage = Math.trunc(1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times);
+    var damage = player[(now_player-1)*-1].HP - Math.trunc(player[(now_player-1)*-1].HP - 1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times);
     player[(now_player-1)*-1].HP = Math.trunc(player[(now_player-1)*-1].HP - 1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times);
     
     statsUpdate.innerHTML = "";

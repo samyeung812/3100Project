@@ -328,18 +328,18 @@ div > div.grid-container:last-child > div{
 }
 
 .a1 {
-	-webkit-animation: spin1 1s linear infinite;
-	        animation: spin1 1s linear infinite;
+	-webkit-animation: spin1 1.5s linear infinite;
+	        animation: spin1 1.5s linear infinite;
 }
 
 .a2 {
-	-webkit-animation: spin2 1s linear infinite;
-	        animation: spin2 1s linear infinite;
+	-webkit-animation: spin2 1.5s linear infinite;
+	        animation: spin2 1.5s linear infinite;
 }
 
 .a3 {
-	-webkit-animation: spin3 1s linear infinite;
-	        animation: spin3 1s linear infinite;
+	-webkit-animation: spin3 1.5s linear infinite;
+	        animation: spin3 1.5s linear infinite;
 }
 
 @-webkit-keyframes spin1 {
@@ -431,4 +431,8 @@ div > div.grid-container:last-child > div{
 .opponent-turn {
     background-color: rgb(240, 128, 128);
     color: #000;
+}
+
+#stats-update {
+    margin: auto;
 }

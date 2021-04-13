@@ -124,6 +124,7 @@ const closeRankingModeBtn = document.getElementById("close-ranking-mode-button")
 // Game Board
 const gameBoard = document.getElementById("game-board");
 const stats = document.getElementById("stats");
+const statsUpdate = document.getElementById("stats-update");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const crystalsImg = document.getElementById("images");
@@ -1869,5 +1870,50 @@ function attack_exec(gamestate, dissolve_value) {
 	player[now_player].attack = Math.trunc(player[now_player].attack + dissolve_value.attack_increase);
 	player[now_player].defence = Math.trunc(player[now_player].defence + dissolve_value.defence_increase);
 	player[now_player].HP = Math.trunc(player[now_player].HP + dissolve_value.HP_increase);
-	player[(now_player-1)*-1].HP = Math.trunc(player[(now_player-1)*-1].HP - 1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times);
+    var damage = Math.trunc(player[(now_player-1)*-1].HP - 1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times);
+	player[(now_player-1)*-1].HP = damage;
+    
+    statsUpdate.innerHTML = "";
+    statsUpdate.style.width = String(8 * blockSize) + "px";
+
+    var msg = document.createElement("div");
+    msg.className = "horizontal-container";
+    var attribute = document.createElement("div");
+    attribute.innerHTML = "HP Recovery: ";
+    var value = document.createElement("div");
+    value.innerText = dissolve_value.HP_increase;
+    msg.appendChild(attribute);
+    msg.appendChild(value);
+    statsUpdate.appendChild(msg);
+
+    msg = document.createElement("div");
+    msg.className = "horizontal-container";
+    attribute = document.createElement("div");
+    attribute.innerHTML = "Attack Increase: ";
+    value = document.createElement("div");
+    value.innerText = dissolve_value.attack_increase;
+    msg.appendChild(attribute);
+    msg.appendChild(value);
+    statsUpdate.appendChild(msg);
+
+
+    msg = document.createElement("div");
+    msg.className = "horizontal-container";
+    attribute = document.createElement("div");
+    attribute.innerHTML = "Defence Increase: ";
+    value = document.createElement("div");
+    value.innerText = dissolve_value.defence_increase;
+    msg.appendChild(attribute);
+    msg.appendChild(value);
+    statsUpdate.appendChild(msg);
+
+    msg = document.createElement("div");
+    msg.className = "horizontal-container";
+    attribute = document.createElement("div");
+    attribute.innerHTML = "Damage Dealt: ";
+    value = document.createElement("div");
+    value.innerText = damage;
+    msg.appendChild(attribute);
+    msg.appendChild(value);
+    statsUpdate.appendChild(msg);
 }

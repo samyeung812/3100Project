@@ -265,7 +265,7 @@ io.on("connection", (socket) => {
         }
 
         // wait user to reconnect for 1 minutes
-        var minutes = 0.1;
+        var minutes = 0.5;
         if (room.getRoomId(user)) {
             var roomId = room.getRoomId(user);
             socket.leave(roomId);

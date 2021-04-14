@@ -904,6 +904,7 @@ io.on("connection", (socket) => {
         var seed = rng();
         game.setSeed(seed);
         var winner = game.clockwise(gamestate, x, y, seed);
+        if(winner == -2) return;
         if(winner >= 0) {
             var {score, lose} = updateBattlelog(roomstate, winner);
             var winnerSocket = socketIds.get(roomstate.players[winner].id);
@@ -945,6 +946,7 @@ io.on("connection", (socket) => {
         var seed = rng();
         game.setSeed(seed);
         var winner = game.anticlockwise(gamestate, x, y);
+        if(winenr == -2) return;
         if(winner >= 0) {
             var {score, lose} = updateBattlelog(roomstate, winner);
             var winnerSocket = socketIds.get(roomstate.players[winner].id);

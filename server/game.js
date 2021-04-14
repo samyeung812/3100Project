@@ -352,8 +352,8 @@ function fallAndFill(chess_board) {
 
 function clockwise(gamestate, pointx, pointy)
 {
-    if(pointx < 0 || pointx > 7) return false;
-    if(pointy < 0 || pointy > 7) return false;
+    if(pointx < 0 || pointx > 7) return -2;
+    if(pointy < 0 || pointy > 7) return -2;
     var chess_board = gamestate.chess_board;
 	var moveO =  chess_board[pointy+1][pointx], moveR = chess_board[pointy][pointx], moveD = chess_board[pointy+1][pointx+1], moveRD = chess_board[pointy][pointx+1];
 	chess_board[pointy][pointx] = moveO;
@@ -370,8 +370,8 @@ function clockwise(gamestate, pointx, pointy)
 
 function anticlockwise(gamestate, pointx, pointy)
 {
-    if(pointx < 0 || pointx > 7) return false;
-    if(pointy < 0 || pointy > 7) return false;
+    if(pointx < 0 || pointx > 7) return -2;
+    if(pointy < 0 || pointy > 7) return -2;
     var chess_board = gamestate.chess_board;
 	var moveO = chess_board[pointy][pointx+1], moveR = chess_board[pointy+1][pointx+1], moveD = chess_board[pointy][pointx], moveRD = chess_board[pointy+1][pointx];
 	chess_board[pointy][pointx] = moveO;

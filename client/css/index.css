@@ -3,7 +3,7 @@ html, body {
     margin: 0px;
     height: 100%;
     width: 100%;
-    /* font-family: "Droid Sans", sans-serif; */
+    font-family: "Droid Sans", sans-serif;
 }
 
 div {
@@ -304,7 +304,9 @@ div > div.grid-container:last-child > div{
 .list div {
     border: none;
     text-align: left;
-    grid-template-columns: minmax(200px, 75fr) minmax(100px, 25fr);
+    white-space: nowrap;
+    padding: 2px 0px;
+    grid-template-columns: minmax(200px, 75fr) minmax(115px, 25fr);
 }
 
 .list .optionBox {
@@ -439,12 +441,16 @@ div > div.grid-container:last-child > div{
 
 @media (max-width:768px) {
 
+* {
+    font-size: 11px;
+}
+
 .box input[type=text] {
-    width: 200px;
+    width: 250px;
 }
 
 .box input[type=password] {
-    width: 200px;
+    width: 250px;
 }
 
 .input-box {
@@ -461,6 +467,14 @@ div > div.grid-container:last-child > div{
 
 .input-box {
     width: 90%;
+}
+
+#private-chat-content {
+    width: 80%;
+}
+
+.list div {
+    grid-template-columns: minmax(120px, 75fr) minmax(115px, 25fr);
 }
 
 }

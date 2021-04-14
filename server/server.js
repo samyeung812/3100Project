@@ -192,12 +192,14 @@ function disconnectUser(user) {
                 console.log(user.name + " disconnected from the room");
                 
                 if(roomstate.ranked) {
-                    io.to(roomId).emit("leave-game",  JSON.stringify(null));
-                    io.of('/').adapter.rooms.get(roomId).forEach(socketId => {
-                        var u = usersInfo.get(socketId);
-                        room.leaveRoom(u);
-                        io.sockets.sockets.get(socketId).leave(roomId);
-                    });
+                    if(io.of('/').adapter.rooms.has(roomId)) {
+                        io.to(roomId).emit("leave-game",  JSON.stringify(null));
+                        io.of('/').adapter.rooms.get(roomId).forEach(socketId => {
+                            var u = usersInfo.get(socketId);
+                            room.leaveRoom(u);
+                            io.sockets.sockets.get(socketId).leave(roomId);
+                        });
+                    }
                 } else {
                     roomstate.start = false;
                     roomstate.gamestate = null;

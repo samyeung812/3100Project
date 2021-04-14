@@ -3,7 +3,7 @@
 
 // commad for starting the server
 // nodemon start
-// node server.js
+// node server/server.js
 
 // SQL
 // CREATE DATABASE nodeserverdb;

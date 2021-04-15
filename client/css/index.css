@@ -285,7 +285,6 @@ div > div.grid-container:last-child > div{
 .prompt {
     display: none;
     color:rgba(255, 255, 255, 0.6);
-    font-size: 15px;
 }
 
 .prompted-input:focus + .prompt {
@@ -445,6 +444,14 @@ div > div.grid-container:last-child > div{
     font-size: 11px;
 }
 
+.message-count {
+    font-size: 8px;
+}
+
+.title {
+    font-size: 15px;
+}
+
 .box input[type=text] {
     width: 250px;
 }
@@ -457,12 +464,30 @@ div > div.grid-container:last-child > div{
     display: block !important;
 }
 
+#login-page .input-box {
+    padding: 5px;
+}
+
+#login-page .input-box input[type=text] {
+    margin: auto;
+    display: block;
+}
+
+#login-page .input-box input[type=password] {
+    margin: auto;
+    display: block;
+}
+
 .input-box input[type=text] {
     width: 90% !important;
 }
 
 .input-box input[type=password] {
     width: 90% !important;
+}
+
+.input-box input {
+    display: block;
 }
 
 .input-box {

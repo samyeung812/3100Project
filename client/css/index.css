@@ -486,10 +486,6 @@ div > div.grid-container:last-child > div{
     width: 90% !important;
 }
 
-.input-box input {
-    display: block;
-}
-
 .input-box {
     width: 90%;
 }

@@ -876,7 +876,7 @@ function showPopUpMessageBox(title, messages) {
     box.appendChild(btn);
     wrapper.appendChild(box);
     wrapper.style.display = "block";
-    homePage.appendChild(wrapper);
+    document.getElementsByTagName("body")[0].appendChild(wrapper);
 }
 
 function showRankingMode() {

@@ -1,6 +1,6 @@
 module.exports = {
     initialize,
-    io
+    getIO
 }
 
 var io = null;
@@ -17,4 +17,8 @@ function initialize(server) {
     require("./battlelogHandler.js")(io);
     require("./friendHandler.js")(io);
     require("./gameHandler.js")(io);
+}
+
+function getIO() {
+    return io;
 }

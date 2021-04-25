@@ -908,7 +908,7 @@ socket.on("connect", () => {
 });
 
 socket.on("disconnect", () => {
-    showPopUpMessageBox("Error Message", ["Disconnected From Server!","Please Reload the Page!"]);
+    showPopUpMessageBox("Error Message", ["Disconnected From Server!", "Please Reload the Page!"]);
 });
 
 socket.on("popup-message", (data) => {
@@ -917,6 +917,7 @@ socket.on("popup-message", (data) => {
 });
 
 socket.on("auth-error", (msg) => {
+    showPopUpMessageBox("Error Message", ["Invalid Access Token!", "Please Login Again!"]);
     logout();
 });
 

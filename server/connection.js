@@ -1,6 +1,6 @@
 const room = require("./room.js");
 const { SQLQuery } = require("./database.js");
-const { io } = require("./socket/io.js");
+const io = require("./socket/io.js").getIO();
 
 // Store User Online Information
 var usersInfo = new Map();  // get user info by socket id
@@ -13,8 +13,11 @@ function updateUserConnection(user, socketId, callback)
     if (socketIds.has(user.id) && socketIds.get(user.id) != socketId) {
         // try to inform the user and disconnect
         var target = socketIds.get(user.id);
-        io.to(target).emit("popup-message", JSON.stringify({title: "Warning", messages: ["You Account is Logged in Somewhere Else!"]}));
-        io.sockets.sockets.get(target).disconnect();
+        var targetSocket = io.sockets.sockets.get(target);
+        if(targetSocket) {
+            targetSocket.emit("popup-message", JSON.stringify({title: "Warning", messages: ["You Account is Logged in Somewhere Else!"]}));
+            targetSocket.disconnect();   
+        }
         usersInfo.delete(target);
     }
 
@@ -22,8 +25,11 @@ function updateUserConnection(user, socketId, callback)
     if (usersInfo.has(socketId) && usersInfo.get(socketId).id != user.id) {
         // try to inform the user and disconnect
         var target = socketIds.get(usersInfo.get(socketId).id);
-        io.to(target).emit("popup-message", JSON.stringify({title: "Warning", messages: ["You Account is Logged in Somewhere Else!"]}));
-        io.sockets.sockets.get(target).disconnect();
+        var targetSocket = io.sockets.sockets.get(target);
+        if(targetSocket) {
+            targetSocket.emit("popup-message", JSON.stringify({title: "Warning", messages: ["You Account is Logged in Somewhere Else!"]}));
+            targetSocket.disconnect();
+        }
         socketIds.delete(user.id);
     }
 

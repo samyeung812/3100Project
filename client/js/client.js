@@ -359,7 +359,7 @@ function updateRegistrationError(errorCode) {
 
 function updateForgetError(errorCode) {
     if(errorCode > 0) {
-        ForgetUsernameError.innerText = "Invalid username";
+        forgetUsernameError.innerText = "Invalid username";
     } else {
         forgetUsernameError.innerText = "";
     }

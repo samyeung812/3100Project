@@ -1,16 +1,3 @@
-module.exports = {
-    openRoom,
-    getRoomId,
-    getRoomIdByUserID,
-    getRoomState,
-    leaveRoom,
-    joinRoom,
-    spectate,
-    spectateFriend,
-    play,
-    startRoom
-}
-
 var rooms = new Map();  // get room id by user id
 var roomStates = new Map(); // get room state by room id
 
@@ -141,4 +128,17 @@ function play(user) {
     if(state.spectators.length == spectatorsSize) return false;
     state.players.push(user);
     return true;
+}
+
+module.exports = {
+    openRoom,
+    getRoomId,
+    getRoomIdByUserID,
+    getRoomState,
+    leaveRoom,
+    joinRoom,
+    spectate,
+    spectateFriend,
+    play,
+    startRoom
 }

@@ -1,7 +1,3 @@
-module.exports = {
-    SQLQuery
-}
-
 // SQL
 // CREATE DATABASE nodeserverdb;
 // CREATE TABLE accounts (userid int NOT NULL AUTO_INCREMENT, username varchar(20) NOT NULL, email varchar(200) NOT NULL, password varchar(100) NOT NULL, PRIMARY KEY (userid), CONSTRAINT valid_name UNIQUE (username));
@@ -40,4 +36,8 @@ function SQLQuery(queryString, args, callback)
     } catch (e) {
         return callback(null, e.message);
     }
+}
+
+module.exports = {
+    SQLQuery
 }

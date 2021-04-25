@@ -23,8 +23,6 @@ module.exports = (io) => {
     });
 }
 
-module.exports.updateBattlelog = updateBattlelog;
-
 const { usersInfo } = require("../connection.js");
 const { SQLQuery } = require("../database.js");
 
@@ -56,3 +54,5 @@ function updateBattlelog(roomstate, winner) {
     }
     return {score: score, lose: lose};
 }
+
+module.exports.updateBattlelog = updateBattlelog;

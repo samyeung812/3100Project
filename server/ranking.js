@@ -1,10 +1,3 @@
-module.exports = {
-    inQueue,
-    inQueueById,
-    enqueuePlayer,
-    dequeuePlayer
-};
-
 var queue = new Map();
 
 queue[Symbol.iterator] = function* () {
@@ -61,3 +54,10 @@ function checkMatch(user, callback) {
     if(!match) setTimeout(checkMatch, 10 * 1000, user, callback);
     else callback(user, opponent);
 }
+
+module.exports = {
+    inQueue,
+    inQueueById,
+    enqueuePlayer,
+    dequeuePlayer
+};

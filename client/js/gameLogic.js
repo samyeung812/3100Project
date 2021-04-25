@@ -1,32 +1,3 @@
-const seedrandom = require('seedrandom');
-var rng = seedrandom();
-
-function setSeed(seed) {
-    rng = seedrandom(seed);
-}
-
-function initGameState() {
-    var state = {
-        player: [initPlayer(0), initPlayer(1)],
-        chess_board: boardGenerate(),
-        now_player: 0
-    }
-    return state;
-}
-
-function initPlayer(number) {
-    var player = {
-        HP : 1000,
-        HP_limit : 10000,
-        attack : 20,
-        defence : 20,
-    };
-    if(number) {
-        player.HP = parseInt(player.HP + 300);
-    }
-    return player;
-}
-
 function initDissolveValue() {
     var dissolve_value =
     {
@@ -38,24 +9,9 @@ function initDissolveValue() {
     return dissolve_value;
 }
 
-function boardGenerate()
-{
-    var chess_board = [];
-    for (var i = 0; i < 8; i++) 
-    {
-        chess_board.push([]);
-        for (var j = 0; j < 8; j++)
-        {
-            chess_board[i][j] = crystalGenerate();
-        }
-    }
-    check_dissolve(chess_board);
-    return chess_board;
-}
-
 function crystalGenerate()
 {	
-	var testis = Math.trunc(rng() * 1000)+1;
+	var testis = Math.trunc(Math.random() * 1000)+1;
 	//document.write(testis + " ");
 	if (1 <= testis && testis  <= 25)
 		return 1;
@@ -75,39 +31,20 @@ function crystalGenerate()
 		return 8;
 }
 
-function check_dissolve(chess_board, dissolve_value) //new
-{
-    var dissolve_value = initDissolveValue();
-	// var not_dissolve = true;
-	// boardDisplay(chess_board);
-	var comboround;
-	var dissolved=0;
-	
-	do
-	{
-		comboround = dissolved;
-		dissolved = dissolve(chess_board, dissolved, dissolve_value);
-		comboround -= dissolved;
-		if (comboround != 0)
-		{
-			not_dissolve = false; //mew!
-			// document.write("Dissolved! <br><br>");
-			// boardDisplay(chess_board);
-			fallAndFill(chess_board);
-			// document.write("<br>Fall and Fill!!<br><br>");
-			// boardDisplay(chess_board);
-			// document.write("now combo: " + dissolved + "<br>");
-		}
-	} while (comboround != 0);
-	dissolve_value.attack_increase = Math.round(dissolve_value.attack_increase * (1 + (dissolved -1 ) * 0.2));
-	dissolve_value.defence_increase = Math.round(dissolve_value.defence_increase * (1 + (dissolved -1 ) * 0.2));
-	dissolve_value.HP_increase = Math.round(dissolve_value.HP_increase * (1 + (dissolved -1 ) * 0.2));
-	//document.write(dissolve_value.attack_increase + "<br>" + dissolve_value.defence_increase + "<br>", dissolve_value.HP_increase + "<br>" + dissolve_value.attack_times + "<br><br>");
-	// return {unchanged: not_dissolve, dissolve_value: dissolve_value}; // meow!
-    return dissolve_value;
+function check_dissolve(chess_board, callback) {
+    dissolve_value = initDissolveValue();
+    dissolved = 0;
+    dissolve(chess_board, () => {
+        dissolve_value.attack_increase = Math.round(dissolve_value.attack_increase * (1 + (dissolved -1 ) * 0.2));
+        dissolve_value.defence_increase = Math.round(dissolve_value.defence_increase * (1 + (dissolved -1 ) * 0.2));
+        dissolve_value.HP_increase = Math.round(dissolve_value.HP_increase * (1 + (dissolved -1 ) * 0.2));
+        //document.write(dissolve_value.attack_increase + "<br>" + dissolve_value.defence_increase + "<br>", dissolve_value.HP_increase + "<br>" + dissolve_value.attack_times + "<br><br>");
+        // return {unchanged: not_dissolve, dissolve_value: dissolve_value}; // meow!
+        callback();
+    })
 }
 
-function dissolve(chess_board, combo, dissolve_value) {
+function dissolve(chess_board, callback) {
     var A = Array(10).fill().map(() => Array(10).fill(0));
     var B = Array(10).fill().map(() => Array(10).fill(0));
     var C = Array(10).fill().map(() => Array(10).fill(0));
@@ -207,50 +144,47 @@ function dissolve(chess_board, combo, dissolve_value) {
         }
     }
     
-    /*
-    for (var i = 0; i < 10; i++)
-    {
-        for (var j = 0; j < 10; j++)
-            document.write(A[i][j] + "   ");
-        document.write("<br>");
-    }
-    document.write("<br>");
-    for (var i = 0; i < 10; i++)
-    {
-        for (var j = 0; j < 10; j++)
-            document.write(B[i][j] + "   ");
-        document.write("<br>");
-    }
-    document.write("<br>");
-    for (var i = 0; i < 10; i++)
-    {
-        for (var j = 0; j < 10; j++)
-            document.write(C[i][j] + "   ");
-        document.write("<br>");
-    }
-    document.write("<br>");
-    for (var i = 0; i < 10; i++)
-    {
-        for (var j = 0; j < 10; j++)
-            document.write(D[i][j] + "   ");
-        document.write("<br>");
-    }
-    document.write("<br>");
-    for (var i = 0; i < 10; i++)
-    {
-        for (var j = 0; j < 10; j++)
-            document.write(E[i][j] + "   ");
-        document.write("<br>");
-    }
-    */
-    //sunny
     var total_com = 0;
     total_com = each_type_combo(A, chess_board, total_com, dissolve_value);
     total_com = each_type_combo(B, chess_board, total_com, dissolve_value);
     total_com = each_type_combo(C, chess_board, total_com, dissolve_value);
     total_com = each_type_combo(D, chess_board, total_com, dissolve_value);
     total_com = each_type_combo(E, chess_board, total_com, dissolve_value);
-    return total_com + combo;
+    dissolved += total_com;
+    
+    updateGameBoard();
+    if(total_com == 0) {
+        callback();
+    } else {
+        setTimeout(fallAndFill, 500, chess_board, callback);
+    }
+}
+
+function fallAndFill(chess_board, callback) {
+    var falled = false;
+
+    for(var y = 7; y >= 1; y--) {
+        for(var x = 0; x < 8; x++) {
+            if(chess_board[y][x] == -1) {
+                falled = true;
+                chess_board[y][x] = chess_board[y-1][x];
+                chess_board[y-1][x] = -1;
+            }
+        }
+    }
+    
+    for(var x = 0; x < 8; x++) {
+        if(chess_board[0][x] == -1) {
+            chess_board[0][x] = crystalGenerate();
+        }
+    }
+
+    updateGameBoard();
+    if(falled) {
+        setTimeout(fallAndFill, 200, chess_board, callback);
+    } else {
+        setTimeout(dissolve, 200, chess_board, callback);
+    }
 }
 
 function each_type_combo(A, chess_board, total_com, dissolve_value)
@@ -317,82 +251,61 @@ function each_type_combo_recursion(A,chess_board,this_com, crystal_in_combo,i, j
 		crystal_in_combo[0]++;
 		each_type_combo_recursion(A, chess_board, this_com, crystal_in_combo, i, j+1);
 	}
-	
 }
 
-function fallAndFill(chess_board) {
-    var flag = true;
-    while(flag) {
-        var falled = false;
-        for(var y = 7; y >= 1; y--) {
-            for(var x = 0; x < 8; x++) {
-                if(chess_board[y][x] == -1) {
-                    falled = true;
-                    chess_board[y][x] = chess_board[y-1][x];
-                    chess_board[y-1][x] = -1;
-                }
-            }
-        }
-        
-        for(var x = 0; x < 8; x++) {
-            if(chess_board[0][x] == -1) {
-                chess_board[0][x] = crystalGenerate();
-            }
-        }
-        flag = falled;
-    }
-}
-
-function clockwise(gamestate, pointx, pointy)
+function clockwise(gamestate, pointx, pointy, callback)
 {
-    if(pointx < 0 || pointx > 7) return -2;
-    if(pointy < 0 || pointy > 7) return -2;
+    if(pointx < 0 || pointx > 7) return false;
+    if(pointy < 0 || pointy > 7) return false;
+    updating = true;
     var chess_board = gamestate.chess_board;
 	var moveO =  chess_board[pointy+1][pointx], moveR = chess_board[pointy][pointx], moveD = chess_board[pointy+1][pointx+1], moveRD = chess_board[pointy][pointx+1];
 	chess_board[pointy][pointx] = moveO;
 	chess_board[pointy+1][pointx] = moveD;
 	chess_board[pointy][pointx+1] = moveR;
 	chess_board[pointy+1][pointx+1] = moveRD;
-    var dissolve_value = check_dissolve(chess_board);
-    attack_exec(gamestate, dissolve_value);
-    if(gamestate.player[0].HP <= 0) return 1;
-    if(gamestate.player[1].HP <= 0) return 0;
-    gamestate.now_player ^= 1;
-    return -1;
+    updateGameBoard();
+    setTimeout(check_dissolve, 500, chess_board, () => {
+        attack_exec(gamestate, dissolve_value);
+        gamestate.now_player ^= 1;
+        updateGameBoard();
+        if(gamestate.player[0].HP <= 0) setTimeout(callback , 800, 1);
+        if(gamestate.player[1].HP <= 0) setTimeout(callback , 800, 0);
+        if(gamestate.player[0].HP > 0 && gamestate.player[1].HP > 0) updating = false;
+    });
 }
 
-function anticlockwise(gamestate, pointx, pointy)
+function anticlockwise(gamestate, pointx, pointy, callback)
 {
-    if(pointx < 0 || pointx > 7) return -2;
-    if(pointy < 0 || pointy > 7) return -2;
+    if(pointx < 0 || pointx > 7) return false;
+    if(pointy < 0 || pointy > 7) return false;
+    updating = true;
     var chess_board = gamestate.chess_board;
 	var moveO = chess_board[pointy][pointx+1], moveR = chess_board[pointy+1][pointx+1], moveD = chess_board[pointy][pointx], moveRD = chess_board[pointy+1][pointx];
 	chess_board[pointy][pointx] = moveO;
 	chess_board[pointy+1][pointx] = moveD;
 	chess_board[pointy][pointx+1] = moveR;
 	chess_board[pointy+1][pointx+1] = moveRD;
-    var dissolve_value = check_dissolve(chess_board);
-    attack_exec(gamestate, dissolve_value);
-    if(gamestate.player[0].HP <= 0) return 1;
-    if(gamestate.player[1].HP <= 0) return 0;
-    gamestate.now_player ^= 1;
-    return -1;
+    updateGameBoard();
+    setTimeout(check_dissolve, 500, chess_board, () => {
+        attack_exec(gamestate, dissolve_value);
+        gamestate.now_player ^= 1;
+        updateGameBoard();
+        if(gamestate.player[0].HP <= 0) setTimeout(callback , 800, 1);
+        if(gamestate.player[1].HP <= 0) setTimeout(callback , 800, 0);
+        if(gamestate.player[0].HP > 0 && gamestate.player[1].HP > 0) updating = false;
+    });
 }
 
 function attack_exec(gamestate, dissolve_value) {
     var player = gamestate.player;
     var now_player = gamestate.now_player;
-	dissolve_value.HP_increase = Math.min(dissolve_value.HP_increase, player[now_player].HP_limit - player[now_player].HP); //new bz of HP limit
-	//cout << "Attack increase: " << dissolve_value.attack_increase << "\tDefence increase: "<< dissolve_value.defence_increase << "\tHP_increase: " << dissolve_value.HP_increase << "\tTotal Damage: " << round(1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times) << endl << endl; //new!
-	player[now_player].attack = Math.trunc(player[now_player].attack + dissolve_value.attack_increase);
-	player[now_player].defence = Math.trunc(player[now_player].defence + dissolve_value.defence_increase);
-	player[now_player].HP = Math.trunc(player[now_player].HP + dissolve_value.HP_increase);
-	player[(now_player-1)*-1].HP = Math.trunc(player[(now_player-1)*-1].HP - 1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times);
+    dissolve_value.HP_increase = Math.min(dissolve_value.HP_increase, player[now_player].HP_limit - player[now_player].HP); //new bz of HP limit
+    //cout << "Attack increase: " << dissolve_value.attack_increase << "\tDefence increase: "<< dissolve_value.defence_increase << "\tHP_increase: " << dissolve_value.HP_increase << "\tTotal Damage: " << round(1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times) << endl << endl; //new!
+    player[now_player].attack = Math.trunc(player[now_player].attack + dissolve_value.attack_increase);
+    player[now_player].defence = Math.trunc(player[now_player].defence + dissolve_value.defence_increase);
+    player[now_player].HP = Math.trunc(player[now_player].HP + dissolve_value.HP_increase);
+    var damage = player[(now_player-1)*-1].HP - Math.trunc(player[(now_player-1)*-1].HP - 1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times);
+    player[(now_player-1)*-1].HP = Math.trunc(player[(now_player-1)*-1].HP - 1000.0 / (player[(now_player-1)*-1].defence + 1000.0 ) * player[now_player].attack * dissolve_value.attack_times);
+    updateGameStats(damage);
 }
-
-module.exports = {
-    initGameState,
-    clockwise,
-    anticlockwise,
-    setSeed
-};

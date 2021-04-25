@@ -1,7 +1,3 @@
-module.exports = {
-    sendEmail
-}
-
 const nodemailer = require("nodemailer");
 
 // The information of the gmail account
@@ -39,4 +35,8 @@ function emailTemplate(token)
 {
     var mailTemp = `<center><h1>This is the email from Mind Of Crystal</h1>\n<h3>Do you forget your password?</h3>\n<a href='localhost/reset/?token=${token}'> click here to reset your password </a></center>`;
     return mailTemp;
+}
+
+module.exports = {
+    sendEmail
 }

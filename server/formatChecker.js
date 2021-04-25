@@ -1,9 +1,3 @@
-module.exports = {
-    validUsername,
-    validPassword,
-    validEmail
-}
-
 // 5-20 characters that not start or end with space
 const usernameFormat = /(?=.{3,20}$)^\S.*[^\s]$/;
 // 8-30 characters with minimal 1 upper-case, 1 lower-case, 1 number, 1 special character
@@ -24,4 +18,10 @@ function validPassword(password) {
 function validEmail(email) {
     var emailMatch = emailFormat.exec(email);
     return emailMatch && emailMatch[0] == email;
+}
+
+module.exports = {
+    validUsername,
+    validPassword,
+    validEmail
 }

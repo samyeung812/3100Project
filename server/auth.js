@@ -1,8 +1,3 @@
-module.exports = {
-    authenticateJWT,
-    createJWT
-};
-
 // Library for JSON Web Token (use for generating JSON web token and authentication)
 const jwt = require("jsonwebtoken");
 
@@ -24,3 +19,8 @@ function authenticateJWT (token, callback) {
 function createJWT(data, expires) {
     return jwt.sign(data, JWT_SECRET_KEY, expires);
 }
+
+module.exports = {
+    authenticateJWT,
+    createJWT
+};

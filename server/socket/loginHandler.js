@@ -14,6 +14,7 @@ module.exports = (io) => {
                 var user = res.user;
                 
                 var queryString = "SELECT userid FROM accounts WHERE userid=?;";
+                // get userid
                 SQLQuery(queryString, [user.id], (result, error) => {
                     if(!result || !result[0]) return;
                     // update user online information
@@ -43,7 +44,7 @@ module.exports = (io) => {
             //             64 for non-existing username, 128 for unmatch confirm password
             var errorCode = 0;
 
-            // sql query string
+            // get user account information
             var queryString = "SELECT userid, password FROM accounts WHERE username=?";
             SQLQuery(queryString, [username], async (result, error) => {
                 if(!result) {

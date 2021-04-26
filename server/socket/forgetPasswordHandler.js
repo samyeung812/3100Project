@@ -1,5 +1,6 @@
 module.exports = (io) => {
     io.on("connection", (socket) => {
+        // Send email to user
         socket.on("forget-password", (data) => {
             var input = getData(data);
             var username = input.username;

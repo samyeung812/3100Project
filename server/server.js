@@ -24,7 +24,9 @@ app.get("/", (req, res) => {
 
 // Response for forget password
 app.get("/reset/", (req, res) => {
+    // check whether there is a valid jwt in the url get
     authenticateJWT(req.query.token, (result) => {
+        // response error page if invalid jwt
         if(!result || !result.forget)
         {
             res.writeHead(404, {'Content-Type': 'text/html'});
@@ -54,6 +56,7 @@ app.post("*", (req, res) => {
 // Listen for HTTP Server Access Port 80
 server.listen(80);
 
+// Global function to get JSON data
 global.getData = (data) => {
     try {
         return JSON.parse(data);

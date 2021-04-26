@@ -1,10 +1,12 @@
 const seedrandom = require('seedrandom');
 var rng = seedrandom();
 
+// Set random seed
 function setSeed(seed) {
     rng = seedrandom(seed);
 }
 
+// Initialize game state
 function initGameState() {
     var state = {
         player: [initPlayer(0), initPlayer(1)],
@@ -14,6 +16,7 @@ function initGameState() {
     return state;
 }
 
+// Initialize player stats
 function initPlayer(number) {
     var player = {
         HP : 1000,
@@ -27,6 +30,7 @@ function initPlayer(number) {
     return player;
 }
 
+// Initialize dissolve value
 function initDissolveValue() {
     var dissolve_value =
     {
@@ -38,6 +42,7 @@ function initDissolveValue() {
     return dissolve_value;
 }
 
+// Generate random game board
 function boardGenerate()
 {
     var chess_board = [];
@@ -53,6 +58,7 @@ function boardGenerate()
     return chess_board;
 }
 
+// Get random crystal
 function crystalGenerate()
 {	
 	var testis = Math.trunc(rng() * 1000)+1;
@@ -73,9 +79,11 @@ function crystalGenerate()
 		return 7;
 	else if (731 <= testis && testis  <= 1000)
 		return 8;
+    return 0;
 }
 
-function check_dissolve(chess_board, dissolve_value) //new
+// check whether chess board dissolvable
+function check_dissolve(chess_board, dissolve_value)
 {
     var dissolve_value = initDissolveValue();
 	// var not_dissolve = true;
@@ -107,6 +115,7 @@ function check_dissolve(chess_board, dissolve_value) //new
     return dissolve_value;
 }
 
+// Dissolve crystal from chess board
 function dissolve(chess_board, combo, dissolve_value) {
     var A = Array(10).fill().map(() => Array(10).fill(0));
     var B = Array(10).fill().map(() => Array(10).fill(0));
@@ -320,6 +329,7 @@ function each_type_combo_recursion(A,chess_board,this_com, crystal_in_combo,i, j
 	
 }
 
+// Fall and fill the empty top row
 function fallAndFill(chess_board) {
     var flag = true;
     while(flag) {
@@ -343,6 +353,7 @@ function fallAndFill(chess_board) {
     }
 }
 
+// Perform clockwise rotation
 function clockwise(gamestate, pointx, pointy)
 {
     if(pointx < 0 || pointx > 7) return -2;
@@ -361,6 +372,7 @@ function clockwise(gamestate, pointx, pointy)
     return -1;
 }
 
+// Perform anti-clockwise rotation
 function anticlockwise(gamestate, pointx, pointy)
 {
     if(pointx < 0 || pointx > 7) return -2;
@@ -379,6 +391,7 @@ function anticlockwise(gamestate, pointx, pointy)
     return -1;
 }
 
+// Execute attack after dissolving all possible crystal
 function attack_exec(gamestate, dissolve_value) {
     var player = gamestate.player;
     var now_player = gamestate.now_player;

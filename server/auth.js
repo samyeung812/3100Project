@@ -16,6 +16,7 @@ function authenticateJWT (token, callback) {
     });
 }
 
+// Create JSON Web Token with secret key
 function createJWT(data, expires) {
     return jwt.sign(data, JWT_SECRET_KEY, expires);
 }

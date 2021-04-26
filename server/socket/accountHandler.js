@@ -12,6 +12,7 @@ module.exports = (io) => {
             //             64 for non-existing username, 128 for unmatch confirm password
             var errorCode = 0;
 
+            // check user input format
             if(!validUsername(username)) errorCode |= 1;
             if(!validPassword(password)) errorCode |= 2;
             if(!validEmail(email)) errorCode |= 4;
@@ -22,6 +23,7 @@ module.exports = (io) => {
             var queryString2 = "INSERT INTO accounts (username, email, password) VALUES (?, ?, ?);";
             var queryString3 = "INSERT INTO leaderboard (ranking) VALUES (0);";
             
+            // get number of user with username
             SQLQuery(queryString1, [username], validateAndCreate);
 
             async function validateAndCreate(result, error) {
@@ -31,6 +33,7 @@ module.exports = (io) => {
                     return;
                 }
 
+                // update error code if username duplicated
                 if(result[0].count > 0) {
                     errorCode |= 16;
                 }
@@ -39,12 +42,14 @@ module.exports = (io) => {
                     // encrypt user password
                     const hashedPassword = await bcrypt.hash(password, 10);
 
+                    // insert new account information
                     SQLQuery(queryString2, [username, email, hashedPassword], (result, error) => {
                         if(!result) {
                             errorCode |= 8;
                             socket.emit("register-result", errorCode);
                             return;
                         }
+                        // insert new ranking information
                         SQLQuery(queryString3, [], (result, error) => {
                             if(!result) {
                                 errorCode |= 8;
@@ -79,7 +84,7 @@ module.exports = (io) => {
             var queryString1 = "SELECT password FROM accounts WHERE userid=?";
             var queryString2 = "UPDATE accounts SET password=? WHERE userid=?;";
 
-            // send query to sql database
+            // get user password
             SQLQuery(queryString1, [user.id], compareAndUpdatePassword);
             
             async function compareAndUpdatePassword (result, error) {
@@ -99,7 +104,7 @@ module.exports = (io) => {
                         // encrypt the new password
                         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
-                        // send query to sql database
+                        // update user password
                         SQLQuery(queryString2, [hashedNewPassword, user.id], (result, error) => {
                             if(!result) {
                                 errorCode |= 8;
@@ -191,7 +196,7 @@ module.exports = (io) => {
                     // encrypt the new password
                     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
-                    // send query to sql database
+                    // update user password
                     SQLQuery(queryString, [hashedNewPassword, user.id], (result, error) => {
                         if(!result) {
                             errorCode |= 8;

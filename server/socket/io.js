@@ -5,6 +5,7 @@ module.exports = {
 
 var io = null;
 
+// Initialize socket.io
 function initialize(server) {
     io = require("socket.io")(server);
     require("./disconnectHandler.js")(io);
@@ -19,6 +20,7 @@ function initialize(server) {
     require("./gameHandler.js")(io);
 }
 
+// Return socket.io
 function getIO() {
     return io;
 }

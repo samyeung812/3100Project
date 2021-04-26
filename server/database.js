@@ -1,4 +1,4 @@
-// SQL
+// SQL TABLE structure
 // CREATE DATABASE nodeserverdb;
 // CREATE TABLE accounts (userid int NOT NULL AUTO_INCREMENT, username varchar(20) NOT NULL, email varchar(200) NOT NULL, password varchar(100) NOT NULL, PRIMARY KEY (userid), CONSTRAINT valid_name UNIQUE (username));
 // CREATE TABLE leaderboard (userid int NOT NULL AUTO_INCREMENT, ranking bigint, FOREIGN KEY (userid) REFERENCES accounts(userid), PRIMARY KEY (userid));
@@ -25,6 +25,7 @@ con.connect(function(err) {
     console.log("Connected to MySQL server!");
 });
 
+// Run The Query String and Execute The Callback Function
 function SQLQuery(queryString, args, callback)
 {
     try {

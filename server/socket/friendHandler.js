@@ -17,13 +17,16 @@ module.exports = (io) => {
             var queryString3 = "INSERT INTO friendship (id1, id2, status) VALUES (?,?,?);";
             var queryString4 = "UPDATE friendship SET status=0 WHERE id1=? AND id2=?;";
 
+            // get user id of the target user
             SQLQuery(queryString1, [target], (result, error) => {
                 if(!result) {
                     resultCode |= 1;
                     socket.emit("friend-request-result", resultCode);
                     return;
                 }
-                else if(!result[0]) {
+
+                // check whether target user exist
+                if(!result[0]) {
                     resultCode |= 2;
                     socket.emit("friend-request-result", resultCode);
                     return;
@@ -34,11 +37,13 @@ module.exports = (io) => {
                 var id2 = Math.max(user.id, targetId);
                 var smaller = id1 == user.id;
 
+                // check whether user adding himself
                 if(id1 == id2) {
                     socket.emit("friend-request-result", 2);
                     return;
                 }
-
+                
+                // get friend relationship of two users
                 SQLQuery(queryString2, [id1, id2], (result, error) => {
                     if(!result) {
                         resultCode |= 1;
@@ -61,12 +66,13 @@ module.exports = (io) => {
                     var status = result[0].status;
 
                     // update a new relationship
+                    // check whether the target user is pending friend request for user
                     if((status == 1 && !smaller) || (status == 2 && smaller)) {
                         SQLQuery(queryString4, [id1, id2], (result, error) => {
                             if(!result) {
                                 resultCode |= 1;
                                 socket.emit("friend-request-result", resultCode);
-                                return;    
+                                return;
                             }
                             resultCode |= 64;
                             socket.emit("friend-request-result", resultCode);
@@ -77,6 +83,9 @@ module.exports = (io) => {
                         return;
                     }
 
+                    // friendship status: 0 for friend, 1 for id1 pending id2, 2 for id2 pending id1,
+                    //                    3 for id1 blocked id2, 4 for id2 blocked id1, 5 for both blocked
+                    // handle invalid friend request
                     if(status == 0) resultCode |= 16;
                     else if(status < 3) resultCode |= 32;
                     else if(status == 3) {
@@ -107,12 +116,16 @@ module.exports = (io) => {
             var id1 = Math.min(user.id, targetId);
             var id2 = Math.max(user.id, targetId);
             var smaller = id1 == user.id;
-
+            
+            // get friend relationship
             SQLQuery(queryString1, [id1, id2], (result, error) => {
                 if(!result || !result[0]) return;
                 
                 var status = result[0].status;
+
+                // check whether user can accept friend request
                 if((smaller && status == 2) || (!smaller && status == 1)) {
+                    // set users to be friend
                     SQLQuery(queryString2, [id1, id2], (result, error) => {
                         if(!result) return;
                         socket.emit("update-friends");
@@ -138,11 +151,14 @@ module.exports = (io) => {
             var id2 = Math.max(user.id, targetId);
             var smaller = id1 == user.id;
 
+            // get friend relationship
             SQLQuery(queryString1, [id1, id2], (result, error) => {
                 if(!result || !result[0]) return;
                 
                 var status = result[0].status;
+                // check whether user can deny friend request
                 if((smaller && status == 2) || (!smaller && status == 1)) {
+                    // remove the friend request
                     SQLQuery(queryString2, [id1, id2], (result, error) => {
                         if(!result) return;
                         socket.emit("update-friends");
@@ -154,7 +170,7 @@ module.exports = (io) => {
             });
         });
 
-        // accept friend request by id
+        // cancel friend request by id
         socket.on("cancel-friend-request", (data) => {
             if(!usersInfo.has(socket.id)) return;
 
@@ -168,11 +184,14 @@ module.exports = (io) => {
             var id2 = Math.max(user.id, targetId);
             var smaller = id1 == user.id;
 
+            // get friend relationship
             SQLQuery(queryString1, [id1, id2], (result, error) => {
                 if(!result || !result[0]) return;
                 
                 var status = result[0].status;
+                // check whether user can cancel the friend request
                 if((smaller && status == 1) || (!smaller && status == 2)) {
+                    // remove the friend request
                     SQLQuery(queryString2, [id1, id2], (result, error) => {
                         if(!result) return;
                         socket.emit("update-friends");
@@ -200,6 +219,7 @@ module.exports = (io) => {
             var id2 = Math.max(user.id, targetId);
             var smaller = id1 == user.id;
 
+            // get friend relationship
             SQLQuery(queryString1, [id1, id2], (result, error) => {
                 if(!result) return;
                 
@@ -220,10 +240,12 @@ module.exports = (io) => {
                     newStatus = 5;
                 }
                 
+                // delete all private message between two users
                 SQLQuery(queryString3, [id1, id2, id2, id1], (result, error) => {
                     if(!result) return;
                 });
 
+                // update new friend relationship
                 SQLQuery(queryString4, [newStatus, id1, id2], (result, error) => {
                     if(!result) return;
                     socket.emit("update-friends");
@@ -247,6 +269,7 @@ module.exports = (io) => {
             var queryString4 = "DELETE from messages WHERE (fromid=? AND toid=?) OR (fromid=? AND toid=?);";
             var queryString5 = "UPDATE friendship SET status=? WHERE id1=? AND id2=?;";
 
+            // get user id
             SQLQuery(queryString1, [target], (result, error) => {
                 if(!result || !result[0]) return;
 
@@ -255,6 +278,7 @@ module.exports = (io) => {
                 var id2 = Math.max(user.id, targetId);
                 var smaller = id1 == user.id;
 
+                // get user friend relationship
                 SQLQuery(queryString2, [id1, id2], (result, error) => {
                     if(!result) return;
                     
@@ -275,10 +299,12 @@ module.exports = (io) => {
                         newStatus = 5;
                     }
                     
+                    // delete all private message between two users
                     SQLQuery(queryString4, [id1, id2, id2, id1], (result, error) => {
                         if(!result) return;
                     });
 
+                    // update new friend relationship
                     SQLQuery(queryString5, [newStatus, id1, id2], (result, error) => {
                         if(!result) return;
                         socket.emit("update-friends");
@@ -305,19 +331,23 @@ module.exports = (io) => {
             var id2 = Math.max(user.id, targetId);
             var smaller = id1 == user.id;
 
+            // get friend relationship
             SQLQuery(queryString1, [id1, id2], (result, error) => {
                 if(!result || !result[0]) return;
 
                 var status = result[0].status;
                 
-                // update a new relationship
+                // check whether both users blocking each other
                 if(status == 5) {
+                    // update new friend relationship
                     SQLQuery(queryString2, [smaller?4:3, id1, id2], (result, error) => {
                         if(!result) return;
                         socket.emit("update-friends");
                     });
                 }
+                // check whether users blocking target user
                 else if((status == 3 && smaller) || (status == 4 && !smaller)) {
+                    // remove the friend relationship
                     SQLQuery(queryString3, [id1, id2], (result, error) => {
                         if(!result) return;
                         socket.emit("update-friends");
@@ -326,6 +356,7 @@ module.exports = (io) => {
             });
         });
         
+        // unfriend user by id
         socket.on("unfriend-user", (data) => {
             if(!usersInfo.has(socket.id)) return;
 
@@ -339,12 +370,19 @@ module.exports = (io) => {
             var id1 = Math.min(user.id, targetId);
             var id2 = Math.max(user.id, targetId);
 
+            // get friend relationship
             SQLQuery(queryString1, [id1, id2], (result, error) => {
                 if(!result || !result[0]) return;
+                
+                // check whether users are friend
                 if(result[0].status != 0) return;
+
+                // delete private message between users
                 SQLQuery(queryString2, [id1, id2, id2, id1], (result, error) => {
                     if(!result) return;
                 });
+
+                // remove friend relationship
                 SQLQuery(queryString3, [id1, id2], (result, error) => {
                     if(!result) return;
                     socket.emit("update-friends");
@@ -355,11 +393,13 @@ module.exports = (io) => {
             });
         });
 
+        // get all friends
         socket.on("get-friends", () => {
             if(!usersInfo.has(socket.id)) return;
             var user = usersInfo.get(socket.id);
 
             var queryString = "SELECT a.userid, a.username, f.status, l.ranking, (SELECT COUNT(*) FROM `messages` m WHERE m.fromid=a.userid AND m.toid=? AND m.unread=1) AS unread FROM `friendship` f INNER JOIN `accounts` a ON (f.id1 = a.userid OR f.id2 = a.userid) AND (a.userid != ?) INNER JOIN `leaderboard` l ON (a.userid = l.userid) WHERE f.id1=? OR f.id2=?;";
+            // get users information (userid, username, friend status, ranking, unread message)
             SQLQuery(queryString, [user.id, user.id, user.id, user.id], (result, erorr) => {
                 if(!result) return;
                 result.forEach(user => {
@@ -387,6 +427,7 @@ module.exports = (io) => {
             });
         });
 
+        // send private message to target user id
         socket.on("send-private-message", (data) => {
             if(!usersInfo.has(socket.id)) return;
             var user = usersInfo.get(socket.id);
@@ -398,20 +439,26 @@ module.exports = (io) => {
             var queryString1 = "SELECT status FROM friendship WHERE id1=? AND id2=?;";
             var queryString2 = "INSERT INTO messages (fromid, toid, content) VALUES (?,?,?);"
 
+            // get friend relationship
             SQLQuery(queryString1, [id1, id2], (result, error) => {
                 if(!result || !result[0]) return;
+
+                // check whether users are friends
                 if(result[0].status != 0) return;
                 
+                // insert new message to private message table
                 SQLQuery(queryString2, [user.id, targetId, content], (result, error) => {
                     if(!result) return;
                     socket.emit("update-private-chat", JSON.stringify({fromid: user.id, toid: targetId}));
                     if(socketIds.has(targetId)) {
+                        // send message to target user
                         io.sockets.sockets.get(socketIds.get(targetId)).emit("update-private-chat", JSON.stringify({fromid: user.id, toid: targetId}));
                     }
                 });
             });
         });
 
+        // get all private message by user id
         socket.on("get-private-message", (data) => {
             if(!usersInfo.has(socket.id)) return;
             var user = usersInfo.get(socket.id);
@@ -419,15 +466,20 @@ module.exports = (io) => {
 
             var queryString1 = "SELECT * FROM messages WHERE (fromid=? AND toid=?) OR (fromid=? AND toid=?) ORDER BY createdate;";
             var queryString2 = "UPDATE messages SET unread=0 WHERE fromid=? AND toid=?;";
+
+            // get private message
             SQLQuery(queryString1, [user.id, targetId, targetId, user.id], (result, error) => {
                 if(!result) return;
                 socket.emit("load-private-message", JSON.stringify(result));
+
+                // set all message as read
                 SQLQuery(queryString2, [targetId, user.id], (result, error) => {
                     if(!result) return;
                 });
             });
         });
 
+        // add user to friend's room
         socket.on("spectate-friend", (targetId) => {
             if(!usersInfo.has(socket.id)) return;
             if(!room.getRoomIdByUserID(targetId)) {

@@ -36,6 +36,7 @@ function updateUserConnection(user, socketId, callback)
     // set user online information
     socketIds.set(user.id, socketId);
 
+    // get user ranking
     var queryString = "SELECT ranking FROM leaderboard WHERE userid=?;";
     SQLQuery(queryString, [user.id], (result, error) => {
         if(!result) return;
@@ -45,32 +46,40 @@ function updateUserConnection(user, socketId, callback)
     });
 }
 
-// Detect whether user is disconnected from the game
+// Detect whether user is disconnected from the room/game
 function disconnectUser(user) {
     // check whether user logged in
     if (!socketIds.has(user.id) && room.getRoomId(user)) {
-        // remove user from the game
         var roomId = room.getRoomId(user);
         var roomstate = room.getRoomState(roomId);
+        
         if(!roomstate.start){
+            // remove user from the room
             room.leaveRoom(user);
             io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
             console.log(user.name + " disconnected from the room");
         } else {
+            // remove user from the game
+
+            // check whether user is spectator
             if(roomstate.players[0].id != user.id && roomstate.players[1].id != user.id) {
                 room.leaveRoom(user);
                 io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
                 console.log(user.name + " disconnected from the room");
             } else {
-                var winner = roomstate.players[0].id == user.id ? 1 : 0;
-                var {score} = updateBattlelog(roomstate, winner);
-                var winnerSocket = socketIds.get(roomstate.players[winner].id);
+                // end game and update game result
+                var winner = roomstate.players[0].id == user.id ? 1 : 0; // find the winner
+                var {score} = updateBattlelog(roomstate, winner); // update battlelog and get the score
+                var winnerSocketId = socketIds.get(roomstate.players[winner].id); // get socket id of the winner
                 
-                if(io.sockets.sockets.has(winnerSocket)) io.sockets.sockets.get(winnerSocket).emit("update-user-ranking", score);
+                // inform the winner
+                if(io.sockets.sockets.has(winnerSocketId)) io.sockets.sockets.get(winnerSocketId).emit("update-user-ranking", score);
                 
+                // remove user from the room
                 room.leaveRoom(user);
                 console.log(user.name + " disconnected from the room");
                 
+                // remove the room if the game is ranked
                 if(roomstate.ranked) {
                     if(io.of('/').adapter.rooms.has(roomId)) {
                         io.to(roomId).emit("leave-game",  JSON.stringify(null));
@@ -81,6 +90,7 @@ function disconnectUser(user) {
                         });
                     }
                 } else {
+                    // update the gamestate of the room
                     roomstate.start = false;
                     roomstate.gamestate = null;
                     io.to(roomId).emit("leave-game",  JSON.stringify(roomstate));

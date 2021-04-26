@@ -25,6 +25,7 @@ module.exports = (io) => {
             io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
         });
 
+        // Switch user from player to sepectator mode
         socket.on("spectate", () => {
             if(!usersInfo.has(socket.id)) return;
             if(!room.getRoomId(usersInfo.get(socket.id))) return;
@@ -36,7 +37,20 @@ module.exports = (io) => {
             io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
         });
 
-        // Start room
+        // Switch user from spectator to player
+        socket.on("play", () => {
+            if(!usersInfo.has(socket.id)) return;
+            if(!room.getRoomId(usersInfo.get(socket.id))) return;
+
+            var user = usersInfo.get(socket.id);
+            var roomId = room.getRoomId(user);
+
+            var res = room.play(user);
+            if(!res) return;
+            io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
+        });
+
+        // Start game from the room
         socket.on("start-room", () => {
             if(!usersInfo.has(socket.id)) return;
 
@@ -70,6 +84,7 @@ module.exports = (io) => {
             }
         });
 
+        // Send message to room chat
         socket.on("room-chat", (msg) => {
             if(!usersInfo.has(socket.id)) return;
             if(!room.getRoomId(usersInfo.get(socket.id))) return;
@@ -79,18 +94,6 @@ module.exports = (io) => {
             var roomId = room.getRoomId(user);
             
             io.to(roomId).emit("room-msg", JSON.stringify({username: user.name, msg: msg}));
-        });
-
-        socket.on("play", () => {
-            if(!usersInfo.has(socket.id)) return;
-            if(!room.getRoomId(usersInfo.get(socket.id))) return;
-
-            var user = usersInfo.get(socket.id);
-            var roomId = room.getRoomId(user);
-
-            var res = room.play(user);
-            if(!res) return;
-            io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
         });
     });
 }

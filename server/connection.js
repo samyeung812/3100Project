@@ -1,4 +1,5 @@
 const room = require("./room.js");
+const { updateBattlelog } = require("./socket/battlelogHandler.js");
 const { SQLQuery } = require("./database.js");
 const io = require("./socket/io.js").getIO();
 
@@ -69,7 +70,7 @@ function disconnectUser(user) {
             } else {
                 // end game and update game result
                 var winner = roomstate.players[0].id == user.id ? 1 : 0; // find the winner
-                var {score} = updateBattlelog(roomstate, winner); // update battlelog and get the score
+                var { score } = updateBattlelog(roomstate, winner); // update battlelog and get the score
                 var winnerSocketId = socketIds.get(roomstate.players[winner].id); // get socket id of the winner
                 
                 // inform the winner

@@ -17,7 +17,7 @@ module.exports = (io) => {
             if (room.getRoomId(user)) {
                 var roomId = room.getRoomId(user);
                 socket.leave(roomId);
-                setTimeout(disconnectUser, minutes * 60 * 1000, usersInfo.get(socket.id));
+                setTimeout(disconnectUser, minutes * 60 * 1000, usersInfo.get(socket.id), updateBattlelog);
             }
 
             // remove user online information
@@ -29,5 +29,6 @@ module.exports = (io) => {
 }
 
 const { usersInfo, socketIds, disconnectUser } = require("../connection.js");
+const { updateBattlelog } = require("./battlelogHandler.js");
 const room = require("../room.js");
 const ranking = require("../ranking.js");

@@ -1,11 +1,10 @@
+// Store User Online Information
+const usersInfo = new Map();  // get user info by socket id
+const socketIds = new Map();  //  get socket id by user id
+
 const room = require("./room.js");
-const { updateBattlelog } = require("./socket/battlelogHandler.js");
 const { SQLQuery } = require("./database.js");
 const io = require("./socket/io.js").getIO();
-
-// Store User Online Information
-var usersInfo = new Map();  // get user info by socket id
-var socketIds = new Map();  //  get socket id by user id
 
 // Update user online information
 function updateUserConnection(user, socketId, callback)
@@ -48,7 +47,7 @@ function updateUserConnection(user, socketId, callback)
 }
 
 // Detect whether user is disconnected from the room/game
-function disconnectUser(user) {
+function disconnectUser(user, updateBattlelog) {
     // check whether user logged in
     if (!socketIds.has(user.id) && room.getRoomId(user)) {
         var roomId = room.getRoomId(user);

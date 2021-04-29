@@ -6,7 +6,8 @@ module.exports = (io) => {
             
             var user = usersInfo.get(socket.id);
             if(ranking.inQueue(user)) return;
-
+            if(room.getRoomId(user)) return;
+            
             // call back function for match found
             ranking.enqueuePlayer(user, (player, opponent) => {
                 var targetSocket = io.sockets.sockets.get(socketIds.get(opponent.id));

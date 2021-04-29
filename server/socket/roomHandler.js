@@ -3,6 +3,7 @@ module.exports = (io) => {
         // Join room
         socket.on("join-room", (roomId) => {
             if(!usersInfo.has(socket.id)) return;
+            if(ranking.inQueue(user)) return;
 
             var user = usersInfo.get(socket.id);
             if(room.getRoomId(user)) return;
@@ -19,6 +20,7 @@ module.exports = (io) => {
         socket.on("open-room", () => {
             if(!usersInfo.has(socket.id)) return;
             if(room.getRoomId(usersInfo.get(socket.id))) return;
+            if(ranking.inQueue(user)) return;
 
             var roomId = room.openRoom([usersInfo.get(socket.id)], false);
             socket.join(roomId);
@@ -99,4 +101,5 @@ module.exports = (io) => {
 }
 
 const { usersInfo } = require("../connection.js");
+const ranking = require("../ranking.js");
 const room = require("../room.js");

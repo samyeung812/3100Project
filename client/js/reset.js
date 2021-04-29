@@ -26,7 +26,6 @@ function updateResetPasswordError(errorCode) {
     const socket = io();
 
     socket.on("reset-password-result", (errorCode) => {
-        console.log(errorCode);
         if (errorCode == 0) {
             window.location.replace("http://localhost");
         }
@@ -43,6 +42,6 @@ const resetPassword = (socket) => {
     var token = new URLSearchParams(window.location.search).get("token");
     var newPassword = resetPasswordBox.querySelector("input[name='newPassword']").value;
     var confirmPassword = resetPasswordBox.querySelector("input[name='confirmPassword']").value;
-    console.log(String(JSON.stringify({ token: token, newPassword: newPassword , confirmPassword: confirmPassword})));
+    
     socket.emit("reset-password", JSON.stringify({ token: token, newPassword: newPassword , confirmPassword: confirmPassword}));
 };

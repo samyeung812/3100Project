@@ -486,6 +486,8 @@ module.exports = (io) => {
                 socket.emit("popup-message", JSON.stringify({title: "Spectate Result", messages: ["Room is dismissed."]}));
                 return;
             }
+            if(room.getRoomId(user)) return;
+            if(ranking.inQueue(user)) return;
 
             var user = usersInfo.get(socket.id);
             var roomId = room.getRoomIdByUserID(targetId);

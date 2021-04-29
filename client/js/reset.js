@@ -8,22 +8,21 @@ resetPasswordWrapper.style.display = "block";
 
 function updateResetPasswordError(errorCode) {
     // error code: 1 for invalid username, 2 for invalid password, 4 for invalid email,
-    //             8 for sql connection error, 16 for duplicated username, 32 for duplicated email
-    //             64 for incorrect password, 128 for non-existing username, 256 for unmatch confirm password
+    //             8 for sql connection error, 16 for duplicated username, 32 for incorrect password,
+    //             64 for non-existing username, 128 for unmatch confirm password
     if(errorCode & 2) {
         resetPasswordError.innerText = "Invalid password format!";
     } else {
         resetPasswordError.innerText = "";
     }
 
-    if (errorCode & 256) {
+    if (errorCode & 128) {
         resetConfirmPasswordError.innerText = "The password does not match!";
     } else {
         resetConfirmPasswordError.innerText = "";
     }
 }
 
-(() => {
     const socket = io();
 
     socket.on("reset-password-result", (errorCode) => {
@@ -38,7 +37,6 @@ function updateResetPasswordError(errorCode) {
         resetPassword(socket);
         return false;
     };
-})();
 
 const resetPassword = (socket) => {
     // get user input

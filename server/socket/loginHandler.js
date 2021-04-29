@@ -45,7 +45,10 @@ module.exports = (io) => {
             var errorCode = 0;
             if(!username) errorCode |= 64;
             if(!password) errorCode |= 32;
-            if(errorCode) return errorCode;
+            if(errorCode) {
+                socket.emit("login-result", errorCode);
+                return;
+            }
 
             // get user account information
             var queryString = "SELECT userid, password FROM accounts WHERE username=?";

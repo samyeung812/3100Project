@@ -10,7 +10,7 @@ module.exports = (io) => {
             SQLQuery(queryString, [username], (result, error) => {
                 if (!result || !result[0]) {
                     // forget password result equal 1 implies invalid username
-                    socket.emit("forget-password-result", 1);
+                    socket.emit("forget-password-result", 64);
                     return;
                 }
 

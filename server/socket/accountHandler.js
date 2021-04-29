@@ -89,8 +89,14 @@ module.exports = (io) => {
             //             64 for non-existing username, 128 for unmatch confirm password
             var errorCode = 0;
 
+            if(!password) errorCode |= 32;
             if(!validPassword(newPassword)) errorCode |= 2;
             if (newPassword != confirmPassword) errorCode |= 128;
+
+            if(!password) {
+                socket.emit("change-password-result", errorCode);
+                return;
+            }
 
             // sql query string
             var queryString1 = "SELECT password FROM accounts WHERE userid=?";
@@ -144,8 +150,13 @@ module.exports = (io) => {
             //             8 for sql connection error, 16 for duplicated username, 32 for incorrect password,
             //             64 for non-existing username, 128 for unmatch confirm password
             var errorCode = 0;
-
+            
+            if (!password) errorCode |= 32;
             if (!validEmail(email)) errorCode |= 4;
+            if (!password) {
+                socket.emit("change-email-result", errorCode);
+                return;
+            }
 
             // sql query string
             var queryString1 = "SELECT password FROM accounts WHERE userid=?";

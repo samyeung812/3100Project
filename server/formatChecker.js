@@ -8,18 +8,21 @@ const emailFormat = /(?=.{6,200}$)(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$
 
 // Check Username Format
 function validUsername(username) {
+    if(!username) return false;
     var usernameMatch = usernameFormat.exec(username);
     return usernameMatch && usernameMatch[0] == username;
 }
 
 // Check Password Format
 function validPassword(password) {
+    if(!password) return false;
     var passwordMatch = passwordFormat.exec(password);
     return passwordMatch && passwordMatch[0] == password;
 }
 
 // Check Email Format
 function validEmail(email) {
+    if(!email) return false;
     var emailMatch = emailFormat.exec(email);
     return emailMatch && emailMatch[0] == email;
 }

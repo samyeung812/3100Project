@@ -43,6 +43,9 @@ module.exports = (io) => {
             //             8 for sql connection error, 16 for duplicated username, 32 for incorrect password,
             //             64 for non-existing username, 128 for unmatch confirm password
             var errorCode = 0;
+            if(!username) errorCode |= 64;
+            if(!password) errorCode |= 32;
+            if(errorCode) return errorCode;
 
             // get user account information
             var queryString = "SELECT userid, password FROM accounts WHERE username=?";

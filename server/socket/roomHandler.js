@@ -3,9 +3,9 @@ module.exports = (io) => {
         // Join room
         socket.on("join-room", (roomId) => {
             if(!usersInfo.has(socket.id)) return;
-            if(ranking.inQueue(user)) return;
 
             var user = usersInfo.get(socket.id);
+            if(ranking.inQueue(user)) return;
             if(room.getRoomId(user)) return;
 
             var errorCode = room.joinRoom(user, roomId);
@@ -19,10 +19,12 @@ module.exports = (io) => {
         // Open new room for the user
         socket.on("open-room", () => {
             if(!usersInfo.has(socket.id)) return;
-            if(room.getRoomId(usersInfo.get(socket.id))) return;
+            
+            var user = usersInfo.get(socket.id);
+            if(room.getRoomId(user)) return;
             if(ranking.inQueue(user)) return;
 
-            var roomId = room.openRoom([usersInfo.get(socket.id)], false);
+            var roomId = room.openRoom([user], false);
             socket.join(roomId);
             io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
         });

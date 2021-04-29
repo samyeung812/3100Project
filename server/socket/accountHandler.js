@@ -20,8 +20,9 @@ module.exports = (io) => {
             
             // sql query string
             var queryString1 = "SELECT COUNT(*) AS count FROM accounts WHERE username=?;";
-            var queryString2 = "INSERT INTO accounts (username, email, password) VALUES (?, ?, ?);";
-            var queryString3 = "INSERT INTO leaderboard (ranking) VALUES (0);";
+            var queryString2 = "SELECT COUNT(*) AS count FROM accounts;";
+            var queryString3 = "INSERT INTO accounts (userid, username, email, password) VALUES (?, ?, ?, ?);";
+            var queryString4 = "INSERT INTO leaderboard (userid, ranking) VALUES (?, 0);";
             
             // get number of user with username
             SQLQuery(queryString1, [username], validateAndCreate);
@@ -41,22 +42,33 @@ module.exports = (io) => {
                 if(errorCode == 0) {
                     // encrypt user password
                     const hashedPassword = await bcrypt.hash(password, 10);
-
-                    // insert new account information
-                    SQLQuery(queryString2, [username, email, hashedPassword], (result, error) => {
-                        if(!result) {
+                    
+                    // get number of user
+                    SQLQuery(queryString2, [], (result, error) => {
+                        if(!result || !result[0]) {
                             errorCode |= 8;
                             socket.emit("register-result", errorCode);
                             return;
                         }
-                        // insert new ranking information
-                        SQLQuery(queryString3, [], (result, error) => {
+
+                        var userid = result[0].count + 1;
+
+                        // insert new account information
+                        SQLQuery(queryString3, [userid, username, email, hashedPassword], (result, error) => {
                             if(!result) {
                                 errorCode |= 8;
+                                socket.emit("register-result", errorCode);
+                                return;
                             }
-                            socket.emit("register-result", errorCode);
-                            return;
-                        })
+                            // insert new ranking information
+                            SQLQuery(queryString4, [userid], (result, error) => {
+                                if(!result) {
+                                    errorCode |= 8;
+                                }
+                                socket.emit("register-result", errorCode);
+                                return;
+                            })
+                        });
                     });
                 } else {
                     socket.emit("register-result", errorCode);

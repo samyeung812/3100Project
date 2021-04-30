@@ -5,6 +5,8 @@ module.exports = (io) => {
             if(!usersInfo.has(socket.id)) return;
 
             var user = usersInfo.get(socket.id);
+
+            // check whether user is playing a game or in a room or queuing
             if(ranking.inQueue(user)) return;
             if(room.getRoomId(user)) return;
 
@@ -21,6 +23,8 @@ module.exports = (io) => {
             if(!usersInfo.has(socket.id)) return;
             
             var user = usersInfo.get(socket.id);
+
+            // check whether user is playing a game or in a room or queuing
             if(room.getRoomId(user)) return;
             if(ranking.inQueue(user)) return;
 
@@ -32,9 +36,10 @@ module.exports = (io) => {
         // Switch user from player to sepectator mode
         socket.on("spectate", () => {
             if(!usersInfo.has(socket.id)) return;
-            if(!room.getRoomId(usersInfo.get(socket.id))) return;
 
             var user = usersInfo.get(socket.id);
+            if(!room.getRoomId(user)) return;
+
             var roomId = room.getRoomId(user);
 
             if(!room.spectate(user)) return;
@@ -44,9 +49,10 @@ module.exports = (io) => {
         // Switch user from spectator to player
         socket.on("play", () => {
             if(!usersInfo.has(socket.id)) return;
-            if(!room.getRoomId(usersInfo.get(socket.id))) return;
 
             var user = usersInfo.get(socket.id);
+            if(!room.getRoomId(user)) return;
+
             var roomId = room.getRoomId(user);
 
             var res = room.play(user);
@@ -77,9 +83,7 @@ module.exports = (io) => {
             var roomId = room.getRoomId(user);
             var roomstate = room.getRoomState(roomId);
 
-            if(roomstate.start) {
-                if(roomstate.players[0].id == user.id || roomstate.players[1].id == user.id) return;
-            }
+            if(roomstate.start) return;
             
             // check whether the room is still exist after leaving
             socket.leave(roomId);
@@ -91,11 +95,14 @@ module.exports = (io) => {
         // Send message to room chat
         socket.on("room-chat", (msg) => {
             if(!usersInfo.has(socket.id)) return;
-            if(!room.getRoomId(usersInfo.get(socket.id))) return;
             if(typeof msg != "string" || msg.length == 0) return;
 
             var user = usersInfo.get(socket.id);
+            if(!room.getRoomId(user)) return;
             var roomId = room.getRoomId(user);
+            var roomstate = room.getRoomState(roomId);
+
+            if(roomstate.start) return;
             
             io.to(roomId).emit("room-msg", JSON.stringify({username: user.name, msg: msg}));
         });

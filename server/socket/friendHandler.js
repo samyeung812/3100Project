@@ -234,6 +234,7 @@ module.exports = (io) => {
                 }
 
                 var status = result[0].status;
+                if(status == 5) return;
                 var newStatus = smaller ? 3 : 4;
                 // update a new relationship
                 if((status == 3 && !smaller) || (status == 4 && smaller)) {
@@ -491,14 +492,22 @@ module.exports = (io) => {
             if(room.getRoomId(user)) return;
             if(ranking.inQueue(user)) return;
 
-            var roomId = room.getRoomIdByUserID(targetId);
+            var id1 = Math.min(user.id, targetId);
+            var id2 = Math.max(user.id, targetId);
 
-            if(!room.spectateFriend(roomId, user)) {
-                socket.emit("popup-message", JSON.stringify({title: "Spectate Result", messages: ["You are not allowed to spectate."]}));
-                return;
-            }
-            socket.join(roomId);
-            io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
+            var queryString = "SELECT * FROM friendship where id1=? AND id2=?;";
+            SQLQuery(queryString, [id1, id2], (result, error) => {
+                if(!result || !result[0]) return;
+
+                var roomId = room.getRoomIdByUserID(targetId);
+
+                if(!room.spectateFriend(roomId, user) || result[0].status != 0) {
+                    socket.emit("popup-message", JSON.stringify({title: "Spectate Result", messages: ["You are not allowed to spectate."]}));
+                    return;
+                }
+                socket.join(roomId);
+                io.to(roomId).emit("room-state", JSON.stringify(room.getRoomState(roomId)));
+            });
         });
     });
 }
